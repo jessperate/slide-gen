@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SlideData, defaultSlides } from '@/lib/slides';
 import { ColorMode, THEMES, DEFAULT_THEME } from '@/lib/themes';
+import LZString from 'lz-string';
 import ThumbnailRail from '@/components/ThumbnailRail';
 import EditPanel from '@/components/EditPanel';
 import AddSlideModal from '@/components/AddSlideModal';
@@ -35,6 +36,7 @@ export default function SlideGenPage() {
   const [showPresentControls, setShowPresentControls] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('green');
   const [slideColorOverrides, setSlideColorOverrides] = useState<Record<string, ColorMode>>({});
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,24 @@ export default function SlideGenPage() {
       const savedSlideColors = localStorage.getItem(SLIDE_COLORS_KEY);
       if (savedSlideColors) setSlideColorOverrides(JSON.parse(savedSlideColors));
     } catch {}
+  }, []);
+
+  // Load shared deck from URL hash on mount
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#s=')) return;
+    try {
+      const json = LZString.decompressFromEncodedURIComponent(hash.slice(3));
+      if (!json) return;
+      const state = JSON.parse(json);
+      if (Array.isArray(state.slides) && state.slides.length > 0) {
+        setSlides(state.slides);
+        setShowOnboarding(false);
+      }
+      if (state.colorMode && THEMES[state.colorMode as ColorMode]) setColorMode(state.colorMode);
+      if (state.slideColorOverrides) setSlideColorOverrides(state.slideColorOverrides);
+    } catch { /* ignore malformed hash */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Autosave slides
@@ -551,6 +571,31 @@ export default function SlideGenPage() {
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = exportProgress ? 'rgba(255,255,255,0.3)' : '#F8FFFA'; }}
           >
             {exportProgress ? `Exporting ${exportProgress.current}/${exportProgress.total}…` : '↗ Google Slides'}
+          </button>
+
+          <button
+            onClick={() => {
+              const state = { slides, colorMode, slideColorOverrides };
+              const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
+              const url = `${window.location.origin}${window.location.pathname}#s=${compressed}`;
+              window.history.replaceState(null, '', `#s=${compressed}`);
+              navigator.clipboard.writeText(url).then(() => {
+                setShareStatus('copied');
+                setTimeout(() => setShareStatus('idle'), 2500);
+              });
+            }}
+            style={{
+              background: shareStatus === 'copied' ? '#002910' : 'transparent',
+              border: `1px solid ${shareStatus === 'copied' ? '#008c44' : '#2a2a2a'}`,
+              color: shareStatus === 'copied' ? '#00ff64' : '#F8FFFA',
+              fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', padding: '5px 12px',
+              transition: 'all 0.2s', whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => { if (shareStatus === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; } }}
+            onMouseLeave={(e) => { if (shareStatus === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = '#F8FFFA'; } }}
+          >
+            {shareStatus === 'copied' ? '✓ Link copied!' : '↗ Share'}
           </button>
 
           <button
