@@ -1,6 +1,7 @@
 'use client';
 
 import { BackCoverSlideData } from '@/lib/slides';
+import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: BackCoverSlideData;
@@ -24,19 +25,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
         justifyContent: 'center',
       }}
     >
-      {/* AirOps wordmark */}
-      <div
-        style={{
-          fontFamily: '"Serrif VF", serif',
-          fontSize: 80,
-          fontWeight: 400,
-          color: 'white',
-          letterSpacing: '-0.02em',
-          lineHeight: 1,
-          marginBottom: 24,
-        }}
-      >
-        AirOps
+      {/* AirOps logo */}
+      <div style={{ marginBottom: 32 }}>
+        <AirOpsLogo color="#ffffff" width={220} />
       </div>
 
       {/* CTA */}

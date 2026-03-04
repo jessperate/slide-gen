@@ -1,6 +1,7 @@
 'use client';
 
 import { ContentSlideData } from '@/lib/slides';
+import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: ContentSlideData;
@@ -21,18 +22,8 @@ export default function ContentSlide({ data, interactive = true }: Props) {
       }}
     >
       {/* AirOps logo bottom-left */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 32,
-          left: 48,
-          fontFamily: '"Serrif VF", serif',
-          fontSize: 16,
-          fontWeight: 400,
-          color: '#008c44',
-        }}
-      >
-        AirOps
+      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+        <AirOpsLogo color="#001408" width={80} />
       </div>
 
       {/* Headline */}
