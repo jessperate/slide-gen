@@ -1,0 +1,113 @@
+'use client';
+
+import { AgendaSlideData } from '@/lib/slides';
+
+interface Props {
+  data: AgendaSlideData;
+  interactive?: boolean;
+}
+
+export default function AgendaSlide({ data, interactive = true }: Props) {
+  return (
+    <div
+      style={{
+        width: 1280,
+        height: 720,
+        position: 'relative',
+        overflow: 'hidden',
+        pointerEvents: interactive ? 'auto' : 'none',
+        fontFamily: '"Saans", sans-serif',
+      }}
+    >
+      {/* Left panel */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 480,
+          height: 720,
+          background: '#CCFFE0',
+          backgroundImage: 'radial-gradient(circle, rgba(0,100,40,0.25) 2px, transparent 2px)',
+          backgroundSize: '24px 24px',
+          backgroundPosition: '16px 16px',
+        }}
+      />
+
+      {/* Right panel */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 480,
+          width: 800,
+          height: 720,
+          background: '#002910',
+        }}
+      />
+
+      {/* Title */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 72,
+          left: 528,
+          fontFamily: '"Serrif VF", serif',
+          fontSize: 56,
+          fontWeight: 400,
+          color: '#ffffff',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+        }}
+      >
+        {data.title}
+      </div>
+
+      {/* Items */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 200,
+          left: 528,
+          right: 48,
+        }}
+      >
+        {data.items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 16,
+              marginBottom: 40,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: '"Serrif VF", serif',
+                fontSize: 18,
+                fontWeight: 700,
+                color: '#008c44',
+                minWidth: 28,
+                flexShrink: 0,
+              }}
+            >
+              {String(i + 1).padStart(2, '0')}
+            </div>
+            <div
+              style={{
+                fontFamily: '"Saans", sans-serif',
+                fontSize: 18,
+                fontWeight: 400,
+                color: '#EEF5F1',
+                lineHeight: 1.4,
+              }}
+            >
+              {item}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

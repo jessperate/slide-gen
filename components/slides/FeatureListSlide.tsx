@@ -1,14 +1,16 @@
 'use client';
 
-import { ContentSlideData } from '@/lib/slides';
+import { FeatureListSlideData } from '@/lib/slides';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
-  data: ContentSlideData;
+  data: FeatureListSlideData;
   interactive?: boolean;
 }
 
-export default function ContentSlide({ data, interactive = true }: Props) {
+export default function FeatureListSlide({ data, interactive = true }: Props) {
+  const items = data.items.slice(0, 5);
+
   return (
     <div
       style={{
@@ -34,72 +36,78 @@ export default function ContentSlide({ data, interactive = true }: Props) {
         style={{
           position: 'absolute',
           top: 48,
-          left: 48,
-          fontFamily: '"Serrif VF", serif',
-          fontSize: 44,
-          fontWeight: 400,
+          left: 64,
+          fontFamily: '"Saans", sans-serif',
+          fontSize: 32,
+          fontWeight: 700,
           color: '#000d05',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1,
         }}
       >
         {data.headline}
       </div>
 
-      {/* Divider */}
+      {/* Items */}
       <div
         style={{
           position: 'absolute',
-          top: 128,
-          left: 48,
-          right: 48,
-          height: 1,
-          background: '#d4e8da',
-        }}
-      />
-
-      {/* Columns */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 152,
-          left: 48,
-          right: 48,
-          bottom: 80,
-          display: 'flex',
-          gap: 24,
+          top: 130,
+          left: 64,
+          right: 64,
         }}
       >
-        {data.columns.map((col, i) => (
+        {items.map((item, i) => (
           <div
             key={i}
             style={{
-              width: 556,
-              flexShrink: 0,
+              height: 96,
+              display: 'flex',
+              alignItems: 'center',
+              borderBottom: '1px solid #d4e8da',
+              gap: 0,
             }}
           >
+            {/* Icon */}
+            <div
+              style={{
+                fontSize: 28,
+                color: '#008c44',
+                width: 40,
+                flexShrink: 0,
+                lineHeight: 1,
+              }}
+            >
+              {item.icon}
+            </div>
+
+            {/* Title */}
             <div
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 18,
-                fontWeight: 500,
+                fontSize: 16,
+                fontWeight: 600,
                 color: '#000d05',
-                marginBottom: 16,
+                width: 220,
+                flexShrink: 0,
+                marginLeft: 16,
                 lineHeight: 1.3,
               }}
             >
-              {col.heading}
+              {item.title}
             </div>
+
+            {/* Body */}
             <div
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
                 color: '#676c79',
-                lineHeight: 1.6,
+                lineHeight: 1.5,
+                flex: 1,
+                marginLeft: 24,
               }}
             >
-              {col.body}
+              {item.body}
             </div>
           </div>
         ))}

@@ -18,17 +18,20 @@ export default function StatsSlide({ data, interactive = true }: Props) {
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: '#ffffff',
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-left */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+      {/* AirOps logo bottom-right */}
+      <div style={{ position: 'absolute', bottom: 36, right: 64 }}>
         <AirOpsLogo color="#001408" width={80} />
       </div>
+
+      {/* Green bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
 
       {/* Headline */}
       <div

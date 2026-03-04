@@ -8,6 +8,13 @@ import DiagramSlide from './slides/DiagramSlide';
 import StatsSlide from './slides/StatsSlide';
 import ContentSlide from './slides/ContentSlide';
 import BackCoverSlide from './slides/BackCoverSlide';
+import HeroSlide from './slides/HeroSlide';
+import AgendaSlide from './slides/AgendaSlide';
+import QuoteSlide from './slides/QuoteSlide';
+import ThreeColSlide from './slides/ThreeColSlide';
+import FeatureListSlide from './slides/FeatureListSlide';
+import CustomerStorySlide from './slides/CustomerStorySlide';
+import ChecklistSlide from './slides/ChecklistSlide';
 
 interface Props {
   slide: SlideData;
@@ -30,6 +37,20 @@ export function renderSlide(slide: SlideData, interactive: boolean = true) {
       return <ContentSlide data={slide} interactive={interactive} />;
     case 'back-cover':
       return <BackCoverSlide data={slide} interactive={interactive} />;
+    case 'hero':
+      return <HeroSlide data={slide} interactive={interactive} />;
+    case 'agenda':
+      return <AgendaSlide data={slide} interactive={interactive} />;
+    case 'quote':
+      return <QuoteSlide data={slide} interactive={interactive} />;
+    case 'three-col':
+      return <ThreeColSlide data={slide} interactive={interactive} />;
+    case 'feature-list':
+      return <FeatureListSlide data={slide} interactive={interactive} />;
+    case 'customer-story':
+      return <CustomerStorySlide data={slide} interactive={interactive} />;
+    case 'checklist':
+      return <ChecklistSlide data={slide} interactive={interactive} />;
     default:
       return null;
   }

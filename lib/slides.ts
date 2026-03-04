@@ -60,13 +60,95 @@ export interface BackCoverSlideData {
   url: string;
 }
 
+export interface HeroSlideData {
+  id: string;
+  type: 'hero';
+  headline: string;
+  customerLogos: string[];
+}
+
+export interface AgendaSlideData {
+  id: string;
+  type: 'agenda';
+  title: string;
+  items: string[];
+}
+
+export interface QuoteSlideData {
+  id: string;
+  type: 'quote';
+  quote: string;
+  attribution: string;
+}
+
+export interface ThreeColItem {
+  icon: string;
+  header: string;
+  body: string;
+}
+
+export interface ThreeColSlideData {
+  id: string;
+  type: 'three-col';
+  headline: string;
+  columns: ThreeColItem[];
+}
+
+export interface FeatureListItem {
+  icon: string;
+  title: string;
+  body: string;
+}
+
+export interface FeatureListSlideData {
+  id: string;
+  type: 'feature-list';
+  headline: string;
+  items: FeatureListItem[];
+}
+
+export interface CustomerMetric {
+  value: string;
+  label: string;
+}
+
+export interface CustomerStorySlideData {
+  id: string;
+  type: 'customer-story';
+  customerName: string;
+  headline: string;
+  body: string;
+  attribution: string;
+  metrics: CustomerMetric[];
+}
+
+export interface ChecklistItem {
+  title: string;
+  body: string;
+  checked: boolean;
+}
+
+export interface ChecklistSlideData {
+  id: string;
+  type: 'checklist';
+  headline: string;
+  items: ChecklistItem[];
+}
+
 export type SlideData =
   | CoverSlideData
   | SectionSlideData
   | DiagramSlideData
   | StatsSlideData
   | ContentSlideData
-  | BackCoverSlideData;
+  | BackCoverSlideData
+  | HeroSlideData
+  | AgendaSlideData
+  | QuoteSlideData
+  | ThreeColSlideData
+  | FeatureListSlideData
+  | CustomerStorySlideData
+  | ChecklistSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -138,6 +220,71 @@ export const defaultSlides: SlideData[] = [
     cta: 'Ready to scale your content operation?',
     url: 'airops.com',
   },
+  {
+    id: '7',
+    type: 'hero',
+    headline: 'Craft is the Only\nDurable Strategy',
+    customerLogos: ['Kayak', 'Checkr', 'HubSpot', 'Notion', 'Ramp', 'Webflow'],
+  },
+  {
+    id: '8',
+    type: 'agenda',
+    title: 'Agenda',
+    items: ['The AI Content Opportunity', 'How AirOps Works', 'Live Demo', 'Results & ROI', 'Getting Started', 'Q&A'],
+  },
+  {
+    id: '9',
+    type: 'quote',
+    quote: 'AirOps changed how our entire content team operates. We ship three times faster and the quality has never been higher.',
+    attribution: 'VP of Content, Lightspeed',
+  },
+  {
+    id: '10',
+    type: 'three-col',
+    headline: 'Three pillars of the platform',
+    columns: [
+      { icon: '◆', header: 'Brand Intelligence', body: 'Train every workflow on your voice, style guide, and past content. No off-brand outputs, ever.' },
+      { icon: '↗', header: 'AI-Powered Workflows', body: 'Chain research, drafting, editing, and publishing into one automated pipeline.' },
+      { icon: '✦', header: 'Deep Integrations', body: 'Connect to HubSpot, Notion, Salesforce, and your CMS. AirOps fits your stack.' },
+    ],
+  },
+  {
+    id: '11',
+    type: 'feature-list',
+    headline: 'Everything your team needs',
+    items: [
+      { icon: '◆', title: 'Brand Kits', body: 'Train AirOps on your brand guidelines, tone, and historical content for consistent output every time.' },
+      { icon: '↗', title: 'Content Studio', body: 'Build AI workflows that blend automation with human review checkpoints.' },
+      { icon: '✦', title: 'AEO Optimization', body: 'Optimize content for AI search engines like Perplexity, ChatGPT, and Google AI Mode.' },
+      { icon: '⊞', title: 'Analytics', body: 'Track visibility, citations, and share of voice across all major AI answer engines.' },
+      { icon: '⊡', title: 'Integrations', body: 'Use any model, source, or destination — including every major CMS and data warehouse.' },
+    ],
+  },
+  {
+    id: '12',
+    type: 'customer-story',
+    customerName: 'Lightspeed',
+    headline: 'How Lightspeed keeps content fresh and ranking',
+    body: 'Lightspeed uses AirOps to automate content refreshes across thousands of pages, keeping rankings high without manual effort from their team.',
+    attribution: 'Head of Content, Lightspeed',
+    metrics: [
+      { value: '37%', label: 'Higher Conversion Rate' },
+      { value: '15%+', label: 'Uplift in Organic Traffic' },
+      { value: '36%', label: 'Increase in Monthly Content Output' },
+    ],
+  },
+  {
+    id: '13',
+    type: 'checklist',
+    headline: 'What you get with AirOps',
+    items: [
+      { title: 'Brand Kit setup', body: 'Voice, style, and guidelines trained into every workflow.', checked: true },
+      { title: 'AI workflow library', body: 'Pre-built workflows for briefs, drafts, refreshes, and more.', checked: true },
+      { title: 'CMS integrations', body: 'Publish directly from AirOps to your content system.', checked: false },
+      { title: 'AEO monitoring', body: 'Track how often AI engines cite your brand.', checked: false },
+      { title: 'Dedicated onboarding', body: 'White-glove setup with a content strategist.', checked: false },
+    ],
+  },
 ];
 
 export const defaultSlideByType: Record<string, SlideData> = {
@@ -190,6 +337,66 @@ export const defaultSlideByType: Record<string, SlideData> = {
     type: 'back-cover',
     cta: 'Ready to get started?',
     url: 'airops.com',
+  },
+  hero: {
+    id: 'new',
+    type: 'hero',
+    headline: 'Your Headline\nGoes Here',
+    customerLogos: ['Company A', 'Company B', 'Company C'],
+  },
+  agenda: {
+    id: 'new',
+    type: 'agenda',
+    title: 'Agenda',
+    items: ['Topic one', 'Topic two', 'Topic three'],
+  },
+  quote: {
+    id: 'new',
+    type: 'quote',
+    quote: 'Your customer quote goes here. Make it specific and impactful.',
+    attribution: 'Name, Title, Company',
+  },
+  'three-col': {
+    id: 'new',
+    type: 'three-col',
+    headline: 'Three key points',
+    columns: [
+      { icon: '◆', header: 'Point One', body: 'Description of the first key point goes here.' },
+      { icon: '↗', header: 'Point Two', body: 'Description of the second key point goes here.' },
+      { icon: '✦', header: 'Point Three', body: 'Description of the third key point goes here.' },
+    ],
+  },
+  'feature-list': {
+    id: 'new',
+    type: 'feature-list',
+    headline: 'Key features',
+    items: [
+      { icon: '◆', title: 'Feature name', body: 'Feature description.' },
+      { icon: '↗', title: 'Feature name', body: 'Feature description.' },
+      { icon: '✦', title: 'Feature name', body: 'Feature description.' },
+    ],
+  },
+  'customer-story': {
+    id: 'new',
+    type: 'customer-story',
+    customerName: 'Customer Name',
+    headline: 'How [Company] achieved results with AirOps',
+    body: 'Describe the customer challenge, solution, and outcome here.',
+    attribution: 'Name, Title',
+    metrics: [
+      { value: '0%', label: 'Key metric' },
+      { value: '0x', label: 'Key metric' },
+    ],
+  },
+  checklist: {
+    id: 'new',
+    type: 'checklist',
+    headline: "What's included",
+    items: [
+      { title: 'Item one', body: 'Description of this item.', checked: false },
+      { title: 'Item two', body: 'Description of this item.', checked: false },
+      { title: 'Item three', body: 'Description of this item.', checked: false },
+    ],
   },
 };
 

@@ -25,6 +25,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
         justifyContent: 'center',
       }}
     >
+      {/* Green bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+
       {/* AirOps logo */}
       <div style={{ marginBottom: 32 }}>
         <AirOpsLogo color="#ffffff" width={220} />

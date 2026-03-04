@@ -18,6 +18,13 @@ const slideTypes = [
   { type: 'stats', label: 'Stats' },
   { type: 'content', label: 'Content' },
   { type: 'back-cover', label: 'Back Cover' },
+  { type: 'hero', label: 'Hero' },
+  { type: 'agenda', label: 'Agenda' },
+  { type: 'quote', label: 'Quote' },
+  { type: 'three-col', label: '3 Columns' },
+  { type: 'feature-list', label: 'Feature List' },
+  { type: 'customer-story', label: 'Customer Story' },
+  { type: 'checklist', label: 'Checklist' },
 ] as const;
 
 export default function AddSlideModal({ onAdd, onClose }: Props) {
@@ -54,8 +61,8 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
           border: '1px solid #2a2a2a',
           borderRadius: 0,
           padding: 32,
-          width: 720,
-          maxHeight: '80vh',
+          width: 760,
+          maxHeight: '85vh',
           overflowY: 'auto',
         }}
       >

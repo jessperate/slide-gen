@@ -1,6 +1,18 @@
 'use client';
 
-import { SlideData, DiagramSlideData, StatsSlideData, ContentSlideData } from '@/lib/slides';
+import {
+  SlideData,
+  DiagramSlideData,
+  StatsSlideData,
+  ContentSlideData,
+  HeroSlideData,
+  AgendaSlideData,
+  QuoteSlideData,
+  ThreeColSlideData,
+  FeatureListSlideData,
+  CustomerStorySlideData,
+  ChecklistSlideData,
+} from '@/lib/slides';
 
 interface Props {
   slide: SlideData;
@@ -41,6 +53,16 @@ const groupDividerStyle: React.CSSProperties = {
   borderTop: '1px solid #2a2a2a',
   marginTop: 16,
   paddingTop: 16,
+};
+
+const groupLabelStyle: React.CSSProperties = {
+  fontFamily: '"Saans Mono", monospace',
+  fontSize: 9,
+  fontWeight: 500,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: 'rgba(255,255,255,0.25)',
+  marginBottom: 12,
 };
 
 function Field({
@@ -150,19 +172,7 @@ export default function EditPanel({ slide, onChange }: Props) {
             />
             {diagramSlide.columns.map((col, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
-                <div
-                  style={{
-                    fontFamily: '"Saans Mono", monospace',
-                    fontSize: 9,
-                    fontWeight: 500,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.25)',
-                    marginBottom: 12,
-                  }}
-                >
-                  Column {i + 1}
-                </div>
+                <div style={groupLabelStyle}>Column {i + 1}</div>
                 <Field
                   label="Header"
                   value={col.header}
@@ -214,19 +224,7 @@ export default function EditPanel({ slide, onChange }: Props) {
             />
             {statsSlide.metrics.map((metric, i) => (
               <div key={i} style={groupDividerStyle}>
-                <div
-                  style={{
-                    fontFamily: '"Saans Mono", monospace',
-                    fontSize: 9,
-                    fontWeight: 500,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.25)',
-                    marginBottom: 12,
-                  }}
-                >
-                  Metric {i + 1}
-                </div>
+                <div style={groupLabelStyle}>Metric {i + 1}</div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                   <div style={{ flex: '0 0 70px' }}>
                     <label style={labelStyle}>Value</label>
@@ -294,19 +292,7 @@ export default function EditPanel({ slide, onChange }: Props) {
             />
             {contentSlide.columns.map((col, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
-                <div
-                  style={{
-                    fontFamily: '"Saans Mono", monospace',
-                    fontSize: 9,
-                    fontWeight: 500,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.25)',
-                    marginBottom: 12,
-                  }}
-                >
-                  Column {i + 1}
-                </div>
+                <div style={groupLabelStyle}>Column {i + 1}</div>
                 <Field
                   label="Heading"
                   value={col.heading}
@@ -349,6 +335,274 @@ export default function EditPanel({ slide, onChange }: Props) {
           </>
         );
 
+      case 'hero': {
+        const heroSlide = slide as HeroSlideData;
+        return (
+          <>
+            <Field
+              label="Headline"
+              value={heroSlide.headline}
+              onChange={(v) => update({ headline: v })}
+              multiline
+            />
+            {heroSlide.customerLogos.map((logo, i) => (
+              <div key={i} style={i === 0 ? {} : { marginBottom: 0 }}>
+                <Field
+                  label={`Logo ${i + 1}`}
+                  value={logo}
+                  onChange={(v) => {
+                    const logos = [...heroSlide.customerLogos];
+                    logos[i] = v;
+                    update({ customerLogos: logos });
+                  }}
+                />
+              </div>
+            ))}
+          </>
+        );
+      }
+
+      case 'agenda': {
+        const agendaSlide = slide as AgendaSlideData;
+        return (
+          <>
+            <Field
+              label="Title"
+              value={agendaSlide.title}
+              onChange={(v) => update({ title: v })}
+            />
+            {agendaSlide.items.map((item, i) => (
+              <Field
+                key={i}
+                label={`Item ${i + 1}`}
+                value={item}
+                onChange={(v) => {
+                  const items = [...agendaSlide.items];
+                  items[i] = v;
+                  update({ items });
+                }}
+              />
+            ))}
+          </>
+        );
+      }
+
+      case 'quote': {
+        const quoteSlide = slide as QuoteSlideData;
+        return (
+          <>
+            <Field
+              label="Quote"
+              value={quoteSlide.quote}
+              onChange={(v) => update({ quote: v })}
+              multiline
+            />
+            <Field
+              label="Attribution"
+              value={quoteSlide.attribution}
+              onChange={(v) => update({ attribution: v })}
+            />
+          </>
+        );
+      }
+
+      case 'three-col': {
+        const threeColSlide = slide as ThreeColSlideData;
+        return (
+          <>
+            <Field
+              label="Headline"
+              value={threeColSlide.headline}
+              onChange={(v) => update({ headline: v })}
+            />
+            {threeColSlide.columns.map((col, i) => (
+              <div key={i} style={i === 0 ? {} : groupDividerStyle}>
+                <div style={groupLabelStyle}>Column {i + 1}</div>
+                <Field
+                  label="Icon"
+                  value={col.icon}
+                  onChange={(v) => {
+                    const cols = [...threeColSlide.columns];
+                    cols[i] = { ...cols[i], icon: v };
+                    update({ columns: cols });
+                  }}
+                />
+                <Field
+                  label="Header"
+                  value={col.header}
+                  onChange={(v) => {
+                    const cols = [...threeColSlide.columns];
+                    cols[i] = { ...cols[i], header: v };
+                    update({ columns: cols });
+                  }}
+                />
+                <Field
+                  label="Body"
+                  value={col.body}
+                  onChange={(v) => {
+                    const cols = [...threeColSlide.columns];
+                    cols[i] = { ...cols[i], body: v };
+                    update({ columns: cols });
+                  }}
+                  multiline
+                />
+              </div>
+            ))}
+          </>
+        );
+      }
+
+      case 'feature-list': {
+        const featureListSlide = slide as FeatureListSlideData;
+        return (
+          <>
+            <Field
+              label="Headline"
+              value={featureListSlide.headline}
+              onChange={(v) => update({ headline: v })}
+            />
+            {featureListSlide.items.map((item, i) => (
+              <div key={i} style={i === 0 ? {} : groupDividerStyle}>
+                <div style={groupLabelStyle}>Item {i + 1}</div>
+                <Field
+                  label="Icon"
+                  value={item.icon}
+                  onChange={(v) => {
+                    const items = [...featureListSlide.items];
+                    items[i] = { ...items[i], icon: v };
+                    update({ items });
+                  }}
+                />
+                <Field
+                  label="Title"
+                  value={item.title}
+                  onChange={(v) => {
+                    const items = [...featureListSlide.items];
+                    items[i] = { ...items[i], title: v };
+                    update({ items });
+                  }}
+                />
+                <Field
+                  label="Body"
+                  value={item.body}
+                  onChange={(v) => {
+                    const items = [...featureListSlide.items];
+                    items[i] = { ...items[i], body: v };
+                    update({ items });
+                  }}
+                  multiline
+                />
+              </div>
+            ))}
+          </>
+        );
+      }
+
+      case 'customer-story': {
+        const csSlide = slide as CustomerStorySlideData;
+        return (
+          <>
+            <Field
+              label="Customer Name"
+              value={csSlide.customerName}
+              onChange={(v) => update({ customerName: v })}
+            />
+            <Field
+              label="Headline"
+              value={csSlide.headline}
+              onChange={(v) => update({ headline: v })}
+              multiline
+            />
+            <Field
+              label="Body"
+              value={csSlide.body}
+              onChange={(v) => update({ body: v })}
+              multiline
+            />
+            <Field
+              label="Attribution"
+              value={csSlide.attribution}
+              onChange={(v) => update({ attribution: v })}
+            />
+            {csSlide.metrics.map((metric, i) => (
+              <div key={i} style={groupDividerStyle}>
+                <div style={groupLabelStyle}>Metric {i + 1}</div>
+                <Field
+                  label="Value"
+                  value={metric.value}
+                  onChange={(v) => {
+                    const metrics = [...csSlide.metrics];
+                    metrics[i] = { ...metrics[i], value: v };
+                    update({ metrics });
+                  }}
+                />
+                <Field
+                  label="Label"
+                  value={metric.label}
+                  onChange={(v) => {
+                    const metrics = [...csSlide.metrics];
+                    metrics[i] = { ...metrics[i], label: v };
+                    update({ metrics });
+                  }}
+                />
+              </div>
+            ))}
+          </>
+        );
+      }
+
+      case 'checklist': {
+        const checklistSlide = slide as ChecklistSlideData;
+        return (
+          <>
+            <Field
+              label="Headline"
+              value={checklistSlide.headline}
+              onChange={(v) => update({ headline: v })}
+            />
+            {checklistSlide.items.map((item, i) => (
+              <div key={i} style={i === 0 ? {} : groupDividerStyle}>
+                <div style={groupLabelStyle}>Item {i + 1}</div>
+                <Field
+                  label="Title"
+                  value={item.title}
+                  onChange={(v) => {
+                    const items = [...checklistSlide.items];
+                    items[i] = { ...items[i], title: v };
+                    update({ items });
+                  }}
+                />
+                <Field
+                  label="Body"
+                  value={item.body}
+                  onChange={(v) => {
+                    const items = [...checklistSlide.items];
+                    items[i] = { ...items[i], body: v };
+                    update({ items });
+                  }}
+                  multiline
+                />
+                <div style={sectionStyle}>
+                  <label style={labelStyle}>Checked</label>
+                  <select
+                    value={item.checked ? 'true' : 'false'}
+                    onChange={(e) => {
+                      const items = [...checklistSlide.items];
+                      items[i] = { ...items[i], checked: e.target.value === 'true' };
+                      update({ items });
+                    }}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="true">Checked</option>
+                    <option value="false">Unchecked</option>
+                  </select>
+                </div>
+              </div>
+            ))}
+          </>
+        );
+      }
+
       default:
         return null;
     }
@@ -362,6 +616,13 @@ export default function EditPanel({ slide, onChange }: Props) {
       case 'stats': return 'Stats Slide';
       case 'content': return 'Content Slide';
       case 'back-cover': return 'Back Cover';
+      case 'hero': return 'Hero Slide';
+      case 'agenda': return 'Agenda';
+      case 'quote': return 'Quote';
+      case 'three-col': return '3 Columns';
+      case 'feature-list': return 'Feature List';
+      case 'customer-story': return 'Customer Story';
+      case 'checklist': return 'Checklist';
       default: return 'Slide';
     }
   };
