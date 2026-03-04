@@ -6,6 +6,7 @@ import { ColorMode, THEMES, DEFAULT_THEME } from '@/lib/themes';
 import LZString from 'lz-string';
 import ThumbnailRail from '@/components/ThumbnailRail';
 import EditPanel from '@/components/EditPanel';
+import AIChatPanel from '@/components/AIChatPanel';
 import AddSlideModal from '@/components/AddSlideModal';
 import OnboardingScreen from '@/components/OnboardingScreen';
 import AirOpsLogo from '@/components/AirOpsLogo';
@@ -69,6 +70,8 @@ export default function SlideGenPage() {
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState('');
   const [showResolved, setShowResolved] = useState(false);
+  const [preRemixSlides, setPreRemixSlides] = useState<Record<string, SlideData>>({});
+  const [chatMode, setChatMode] = useState(false);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -226,6 +229,20 @@ export default function SlideGenPage() {
     setSlides((prev) =>
       prev.map((s, i) => i === activeIndex ? ({ ...s, ...updates } as SlideData) : s),
     );
+  };
+
+  const handleRemix = (remixed: SlideData) => {
+    const originalId = activeSlide?.id;
+    if (!originalId) return;
+    setPreRemixSlides((prev) => prev[originalId] ? prev : { ...prev, [originalId]: activeSlide });
+    setSlides((prev) => prev.map((s, i) => i === activeIndex ? remixed : s));
+  };
+
+  const handleRevert = () => {
+    const original = preRemixSlides[activeSlide?.id ?? ''];
+    if (!original) return;
+    setSlides((prev) => prev.map((s, i) => i === activeIndex ? original : s));
+    setPreRemixSlides((prev) => { const next = { ...prev }; delete next[original.id]; return next; });
   };
 
   const addSlide = (newSlide: SlideData) => {
@@ -601,6 +618,7 @@ export default function SlideGenPage() {
             onClick={() => {
               const next = !commentMode;
               setCommentMode(next);
+              if (next) setChatMode(false);
               if (!next) { setPendingCommentPos(null); setCommentInput(''); }
             }}
             style={{
@@ -613,6 +631,25 @@ export default function SlideGenPage() {
             }}
           >
             {commentMode ? '● ' : ''}Comment{comments.length > 0 ? ` (${comments.length})` : ''}
+          </button>
+
+          <button
+            onClick={() => {
+              const next = !chatMode;
+              setChatMode(next);
+              if (next) setCommentMode(false);
+            }}
+            style={{
+              background: chatMode ? '#001a0a' : 'transparent',
+              border: `1px solid ${chatMode ? '#00ff64' : '#2a2a2a'}`,
+              color: chatMode ? '#00ff64' : 'rgba(255,255,255,0.5)',
+              fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', padding: '5px 12px',
+              transition: 'all 0.2s', whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <span style={{ fontSize: 13 }}>✦</span> AI Edit
           </button>
 
           <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
@@ -681,7 +718,15 @@ export default function SlideGenPage() {
 
           <button
             onClick={() => {
-              const state = { slides, colorMode, slideColorOverrides, comments };
+              // Strip base64 images before sharing — they bloat URLs by 10–100x
+              const stripBase64 = (s: SlideData) => {
+                const rec = s as unknown as Record<string, unknown>;
+                if (typeof rec.imageUrl === 'string' && rec.imageUrl.startsWith('data:')) {
+                  return { ...s, imageUrl: undefined } as SlideData;
+                }
+                return s;
+              };
+              const state = { slides: slides.map(stripBase64), colorMode, slideColorOverrides, comments };
               const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
               const url = `${window.location.origin}${window.location.pathname}#s=${compressed}`;
               window.history.replaceState(null, '', `#s=${compressed}`);
@@ -920,7 +965,12 @@ export default function SlideGenPage() {
 
           {/* Remix bar */}
           {activeSlide && (
-            <RemixBar slide={activeSlide} onRemix={updateActiveSlide} />
+            <RemixBar
+              slide={activeSlide}
+              originalSlide={preRemixSlides[activeSlide.id]}
+              onRemix={handleRemix}
+              onRevert={preRemixSlides[activeSlide.id] ? handleRevert : undefined}
+            />
           )}
         </div>
 
@@ -1005,7 +1055,12 @@ export default function SlideGenPage() {
 
         {/* Right panel — edit or comments */}
         <div style={{ gridArea: 'panel', overflow: 'hidden' }}>
-          {commentMode ? (
+          {chatMode && activeSlide ? (
+            <AIChatPanel
+              slide={activeSlide}
+              onUpdate={(updated) => setSlides((prev) => prev.map((s, i) => i === activeIndex ? updated : s))}
+            />
+          ) : commentMode ? (
             /* Comments panel */
             <div style={{ height: '100%', background: '#0f0f0f', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #2a2a2a' }}>
               {/* Header */}
