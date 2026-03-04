@@ -276,7 +276,7 @@ function BrandfetchSection({
 
   return (
     <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
-      <label style={labelStyle}>Brand Logos</label>
+      <label style={labelStyle}>AirOps Customer Brand Logos</label>
 
       {/* AirOps customer logo grid */}
       <div
