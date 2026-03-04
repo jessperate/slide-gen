@@ -285,7 +285,7 @@ export function LogoLayer({
             src={`https://cdn.brandfetch.io/${logo.domain}/w/400/h/120`}
             alt={logo.domain}
             draggable={false}
-            style={{ width: logo.width, height: 'auto', display: 'block', pointerEvents: 'none' }}
+            style={{ width: logo.width, height: 'auto', display: 'block', pointerEvents: 'none', filter: logo.grayscale ? 'grayscale(1)' : 'none' }}
           />
         </div>
       ))}

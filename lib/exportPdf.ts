@@ -11,6 +11,7 @@ const FONT_FILES = [
   { family: 'Saans', weight: '700', url: '/fonts/Saans-Bold.ttf' },
   { family: 'Saans Mono', weight: '500', url: '/fonts/SaansMono-Medium.ttf' },
   { family: 'Serrif VF', weight: '100 900', url: '/fonts/SerrifVF.ttf' },
+  { family: 'remixicon', weight: '400', url: '/fonts/remixicon.ttf' },
 ];
 
 function bufferToBase64(buf: ArrayBuffer): string {

@@ -1,9 +1,10 @@
 export interface LogoOverlay {
   id: string;
   domain: string;
-  x: number;   // 0–100 (% of canvas width), anchor = center
-  y: number;   // 0–100 (% of canvas height), anchor = center
-  width: number; // px at 1280×720
+  x: number;       // 0–100 (% of canvas width), anchor = center
+  y: number;       // 0–100 (% of canvas height), anchor = center
+  width: number;   // px at 1280×720
+  grayscale?: boolean;
 }
 
 export interface CoverSlideData {

@@ -94,25 +94,14 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
           >
             {/* Icon */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
-                const next = [...data.columns];
-                next[i] = { ...next[i], icon: e.currentTarget.textContent ?? '' };
-                onUpdate?.({ ...data, columns: next });
-              }}
               style={{
-                fontFamily: '"Saans", sans-serif',
                 fontSize: 32,
                 color: theme.accentMid,
                 marginBottom: 8,
                 lineHeight: 1,
-                outline: 'none',
-                cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
-              {col.icon}
+              {col.icon.startsWith('ri-') ? <i className={col.icon} /> : col.icon}
             </div>
 
             {/* Column header */}

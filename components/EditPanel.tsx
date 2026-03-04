@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import AirOpsLogo from '@/components/AirOpsLogo';
 import {
   SlideData,
@@ -350,49 +350,66 @@ function BrandfetchSection({
             <div
               key={logo.id}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 4,
+                marginBottom: 6,
                 background: '#1a1a1a',
                 border: '1px solid #2a2a2a',
                 padding: '6px 8px',
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://cdn.brandfetch.io/${logo.domain}/w/200/h/60`}
-                alt={logo.domain}
-                style={{ height: 18, width: 'auto', flexShrink: 0, display: 'block' }}
-              />
-              <span
-                style={{
-                  flex: 1,
-                  fontFamily: '"Saans Mono", monospace',
-                  fontSize: 10,
-                  color: 'rgba(255,255,255,0.4)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {logo.domain}
-              </span>
-              <button
-                onClick={() => onUpdate(logos.filter((l) => l.id !== logo.id))}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.3)',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  padding: '0 2px',
-                  flexShrink: 0,
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </button>
+              {/* Row 1: preview + domain + remove */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://cdn.brandfetch.io/${logo.domain}/w/200/h/60`}
+                  alt={logo.domain}
+                  style={{ height: 18, width: 'auto', flexShrink: 0, display: 'block', filter: logo.grayscale ? 'grayscale(1)' : 'none' }}
+                />
+                <span style={{ flex: 1, fontFamily: '"Saans Mono", monospace', fontSize: 10, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {logo.domain}
+                </span>
+                <button
+                  onClick={() => onUpdate(logos.filter((l) => l.id !== logo.id))}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+              {/* Row 2: B&W toggle + size controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={() => onUpdate(logos.map((l) => l.id === logo.id ? { ...l, grayscale: !l.grayscale } : l))}
+                  style={{
+                    background: logo.grayscale ? '#2a2a2a' : 'transparent',
+                    border: '1px solid #3a3a3a',
+                    color: logo.grayscale ? '#fff' : 'rgba(255,255,255,0.4)',
+                    fontFamily: '"Saans Mono", monospace',
+                    fontSize: 9,
+                    letterSpacing: '0.06em',
+                    cursor: 'pointer',
+                    padding: '3px 6px',
+                    flexShrink: 0,
+                  }}
+                >
+                  B&W
+                </button>
+                <div style={{ flex: 1 }} />
+                <span style={{ fontFamily: '"Saans Mono", monospace', fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>SIZE</span>
+                <button
+                  onClick={() => onUpdate(logos.map((l) => l.id === logo.id ? { ...l, width: Math.max(60, (l.width ?? 120) - 20) } : l))}
+                  style={{ background: 'none', border: '1px solid #3a3a3a', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 12, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  −
+                </button>
+                <span style={{ fontFamily: '"Saans Mono", monospace', fontSize: 10, color: 'rgba(255,255,255,0.5)', minWidth: 28, textAlign: 'center' }}>
+                  {logo.width ?? 120}
+                </span>
+                <button
+                  onClick={() => onUpdate(logos.map((l) => l.id === logo.id ? { ...l, width: Math.min(320, (l.width ?? 120) + 20) } : l))}
+                  style={{ background: 'none', border: '1px solid #3a3a3a', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 12, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  +
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -684,6 +701,177 @@ function ImageSection({
           placeholder="https://..."
           style={{ ...inputStyle }}
         />
+      )}
+    </div>
+  );
+}
+
+const REMIX_ICONS = [
+  { id: 'ri-rocket-line', label: 'Rocket' },
+  { id: 'ri-lightbulb-line', label: 'Lightbulb' },
+  { id: 'ri-target-line', label: 'Target' },
+  { id: 'ri-star-line', label: 'Star' },
+  { id: 'ri-fire-line', label: 'Fire' },
+  { id: 'ri-trophy-line', label: 'Trophy' },
+  { id: 'ri-gem-line', label: 'Gem' },
+  { id: 'ri-magic-line', label: 'Magic' },
+  { id: 'ri-sparkling-line', label: 'Sparkle' },
+  { id: 'ri-shield-line', label: 'Shield' },
+  { id: 'ri-lock-line', label: 'Lock' },
+  { id: 'ri-heart-line', label: 'Heart' },
+  { id: 'ri-briefcase-line', label: 'Briefcase' },
+  { id: 'ri-building-line', label: 'Building' },
+  { id: 'ri-store-line', label: 'Store' },
+  { id: 'ri-bank-line', label: 'Bank' },
+  { id: 'ri-team-line', label: 'Team' },
+  { id: 'ri-user-line', label: 'User' },
+  { id: 'ri-group-line', label: 'Group' },
+  { id: 'ri-customer-service-line', label: 'Support' },
+  { id: 'ri-bar-chart-line', label: 'Bar Chart' },
+  { id: 'ri-line-chart-line', label: 'Line Chart' },
+  { id: 'ri-pie-chart-2-line', label: 'Pie Chart' },
+  { id: 'ri-funds-line', label: 'Growth' },
+  { id: 'ri-trending-up-line', label: 'Trending Up' },
+  { id: 'ri-money-dollar-circle-line', label: 'Money' },
+  { id: 'ri-exchange-dollar-line', label: 'Revenue' },
+  { id: 'ri-secure-payment-line', label: 'Payment' },
+  { id: 'ri-code-line', label: 'Code' },
+  { id: 'ri-terminal-line', label: 'Terminal' },
+  { id: 'ri-database-line', label: 'Database' },
+  { id: 'ri-cloud-line', label: 'Cloud' },
+  { id: 'ri-cpu-line', label: 'CPU' },
+  { id: 'ri-robot-line', label: 'Robot' },
+  { id: 'ri-brain-line', label: 'Brain' },
+  { id: 'ri-search-line', label: 'Search' },
+  { id: 'ri-filter-line', label: 'Filter' },
+  { id: 'ri-settings-line', label: 'Settings' },
+  { id: 'ri-tools-line', label: 'Tools' },
+  { id: 'ri-dashboard-line', label: 'Dashboard' },
+  { id: 'ri-layout-grid-line', label: 'Grid' },
+  { id: 'ri-apps-line', label: 'Apps' },
+  { id: 'ri-flow-chart', label: 'Flow' },
+  { id: 'ri-puzzle-line', label: 'Puzzle' },
+  { id: 'ri-link-line', label: 'Link' },
+  { id: 'ri-global-line', label: 'Global' },
+  { id: 'ri-map-pin-line', label: 'Location' },
+  { id: 'ri-mail-line', label: 'Email' },
+  { id: 'ri-phone-line', label: 'Phone' },
+  { id: 'ri-message-line', label: 'Message' },
+  { id: 'ri-megaphone-line', label: 'Megaphone' },
+  { id: 'ri-notification-line', label: 'Notification' },
+  { id: 'ri-check-double-line', label: 'Done' },
+  { id: 'ri-task-line', label: 'Task' },
+  { id: 'ri-calendar-line', label: 'Calendar' },
+  { id: 'ri-time-line', label: 'Time' },
+  { id: 'ri-timer-line', label: 'Timer' },
+  { id: 'ri-file-text-line', label: 'Document' },
+  { id: 'ri-article-line', label: 'Article' },
+  { id: 'ri-book-line', label: 'Book' },
+  { id: 'ri-image-line', label: 'Image' },
+  { id: 'ri-video-line', label: 'Video' },
+  { id: 'ri-pencil-line', label: 'Edit' },
+  { id: 'ri-survey-line', label: 'Survey' },
+  { id: 'ri-feedback-line', label: 'Feedback' },
+  { id: 'ri-speed-line', label: 'Speed' },
+  { id: 'ri-pulse-line', label: 'Pulse' },
+  { id: 'ri-focus-2-line', label: 'Focus' },
+  { id: 'ri-cursor-line', label: 'Cursor' },
+  { id: 'ri-arrow-up-line', label: 'Arrow Up' },
+  { id: 'ri-arrow-right-line', label: 'Arrow Right' },
+];
+
+function RemixIconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = query.trim()
+    ? REMIX_ICONS.filter((i) => i.label.toLowerCase().includes(query.toLowerCase()) || i.id.includes(query.toLowerCase()))
+    : REMIX_ICONS;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const isRi = value.startsWith('ri-');
+  const currentLabel = isRi ? (REMIX_ICONS.find((i) => i.id === value)?.label ?? value) : value;
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', marginBottom: 8 }}>
+      <label style={labelStyle}>Icon</label>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: '100%',
+          background: '#1a1a1a',
+          border: '1px solid #2a2a2a',
+          padding: '7px 10px',
+          cursor: 'pointer',
+          color: '#F8FFFA',
+          fontFamily: '"Saans", sans-serif',
+          fontSize: 12,
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: 18, lineHeight: 1, width: 20, flexShrink: 0, textAlign: 'center' }}>
+          {isRi ? <i className={value} /> : value}
+        </span>
+        <span style={{ flex: 1, color: 'rgba(255,255,255,0.5)' }}>{currentLabel}</span>
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>▾</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            background: '#1a1a1a',
+            border: '1px solid #3a3a3a',
+            zIndex: 200,
+            padding: 8,
+          }}
+        >
+          <input
+            autoFocus
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search icons…"
+            style={{ ...inputStyle, marginBottom: 8, width: '100%', boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
+            {filtered.map((icon) => (
+              <button
+                key={icon.id}
+                onClick={() => { onChange(icon.id); setOpen(false); setQuery(''); }}
+                title={icon.label}
+                style={{
+                  background: value === icon.id ? '#002910' : 'transparent',
+                  border: `1px solid ${value === icon.id ? '#008c44' : '#2a2a2a'}`,
+                  color: '#F8FFFA',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 34,
+                  fontSize: 18,
+                }}
+              >
+                <i className={icon.id} />
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1007,8 +1195,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             {threeColSlide.columns.map((col, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
                 <div style={groupLabelStyle}>Column {i + 1}</div>
-                <Field
-                  label="Icon"
+                <RemixIconPicker
                   value={col.icon}
                   onChange={(v) => {
                     const cols = [...threeColSlide.columns];
@@ -1053,8 +1240,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             {featureListSlide.items.map((item, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
                 <div style={groupLabelStyle}>Item {i + 1}</div>
-                <Field
-                  label="Icon"
+                <RemixIconPicker
                   value={item.icon}
                   onChange={(v) => {
                     const items = [...featureListSlide.items];

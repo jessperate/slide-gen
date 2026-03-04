@@ -80,25 +80,15 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate, t
           >
             {/* Icon */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
-                const next = [...data.items];
-                next[i] = { ...next[i], icon: e.currentTarget.textContent ?? '' };
-                onUpdate?.({ ...data, items: next });
-              }}
               style={{
                 fontSize: 28,
                 color: theme.accentMid,
                 width: 40,
                 flexShrink: 0,
                 lineHeight: 1,
-                outline: 'none',
-                cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
-              {item.icon}
+              {item.icon.startsWith('ri-') ? <i className={item.icon} /> : item.icon}
             </div>
 
             {/* Title */}
