@@ -17,8 +17,10 @@ export async function POST(request: Request) {
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    const model = process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.0-flash-exp-image-generation';
+
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-preview-image-generation',
+      model,
       contents: [
         {
           role: 'user',
