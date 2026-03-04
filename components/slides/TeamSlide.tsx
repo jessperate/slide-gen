@@ -96,7 +96,7 @@ function MemberAvatar({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: loading ? 'default' : 'pointer',
-              opacity: hovered || loading ? 1 : 0,
+              opacity: hovered || loading ? 1 : 0.25,
               transition: 'opacity 0.2s',
             }}
           >

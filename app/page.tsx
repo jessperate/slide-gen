@@ -8,7 +8,8 @@ import EditPanel from '@/components/EditPanel';
 import AddSlideModal from '@/components/AddSlideModal';
 import OnboardingScreen from '@/components/OnboardingScreen';
 import AirOpsLogo from '@/components/AirOpsLogo';
-import { renderSlide } from '@/components/SlideCanvas';
+import { renderSlide, LogoLayer } from '@/components/SlideCanvas';
+import { LogoOverlay } from '@/lib/slides';
 
 const STORAGE_KEY = 'slidegen-current-deck';
 const SAVED_KEY = 'slidegen-saved-deck';
@@ -614,6 +615,12 @@ export default function SlideGenPage() {
             <div style={{ width: slideWidth, height: slideHeight, position: 'relative', flexShrink: 0, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
               <div style={{ transformOrigin: 'top left', transform: `scale(${canvasScale})`, width: 1280, height: 720, position: 'absolute', top: 0, left: 0 }}>
                 {renderSlide(activeSlide, true, updateActiveSlide, activeSlideTheme)}
+                <LogoLayer
+                  logos={(activeSlide as { logos?: LogoOverlay[] }).logos ?? []}
+                  scale={canvasScale}
+                  interactive={true}
+                  onUpdate={(logos) => updateActiveSlide({ logos } as Partial<typeof activeSlide>)}
+                />
               </div>
             </div>
           )}

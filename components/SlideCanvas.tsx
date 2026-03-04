@@ -195,7 +195,7 @@ export function renderSlide(
   }
 }
 
-function LogoLayer({
+export function LogoLayer({
   logos,
   scale,
   interactive,
