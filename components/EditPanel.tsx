@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useRef } from 'react';
+import AirOpsLogo from '@/components/AirOpsLogo';
 import {
   SlideData,
   DiagramSlideData,
@@ -12,11 +14,20 @@ import {
   FeatureListSlideData,
   CustomerStorySlideData,
   ChecklistSlideData,
+  BigQuoteSlideData,
+  TwoColMediaSlideData,
+  ContactSlideData,
+  TeamSlideData,
 } from '@/lib/slides';
+import { ColorMode, THEMES } from '@/lib/themes';
 
 interface Props {
   slide: SlideData;
   onChange: (updated: SlideData) => void;
+  colorMode: ColorMode;
+  onColorModeChange: (mode: ColorMode) => void;
+  slideColorMode: ColorMode | undefined;
+  onSlideColorModeChange: (mode: ColorMode | undefined) => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -100,7 +111,230 @@ function Field({
   );
 }
 
-export default function EditPanel({ slide, onChange }: Props) {
+const GIPHY_KEY = 'dcf93d4f15744aa9b5b3d74c8e09a39b';
+
+interface GifResult {
+  id: string;
+  images: {
+    fixed_height_small: { url: string };
+    original: { url: string };
+  };
+}
+
+function GiphySearch({ onSelect }: { onSelect: (url: string) => void }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<GifResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const search = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=12&rating=g`
+      );
+      const data = await res.json();
+      setResults(data.data ?? []);
+    } catch {
+      setError('Search failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+      <label style={labelStyle}>Giphy</label>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && search()}
+          placeholder="Search GIFs…"
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          onClick={search}
+          style={{
+            background: '#2a2a2a',
+            border: '1px solid #3a3a3a',
+            color: '#F8FFFA',
+            fontFamily: '"Saans", sans-serif',
+            fontSize: 12,
+            cursor: 'pointer',
+            padding: '6px 10px',
+            flexShrink: 0,
+            transition: 'background 0.15s',
+          }}
+        >
+          ↵
+        </button>
+      </div>
+      {error && <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464', marginTop: 6 }}>{error}</div>}
+      {results.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 4,
+            marginTop: 8,
+            opacity: loading ? 0.4 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {results.map((gif) => (
+            <button
+              key={gif.id}
+              onClick={() => onSelect(gif.images.original.url)}
+              title="Use this GIF"
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'block',
+                background: '#1a1a1a',
+                overflow: 'hidden',
+                border: '1px solid #2a2a2a',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#008c44')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#2a2a2a')}
+            >
+              <img
+                src={gif.images.fixed_height_small.url}
+                alt=""
+                style={{ width: '100%', height: 56, objectFit: 'cover', display: 'block' }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ImageSection({
+  imageUrl,
+  onUpdate,
+}: {
+  imageUrl: string | undefined;
+  onUpdate: (url: string | undefined) => void;
+}) {
+  const [tab, setTab] = useState<'upload' | 'url'>('upload');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onUpdate(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+      <label style={labelStyle}>Image</label>
+
+      {/* Preview */}
+      {imageUrl && (
+        <div style={{ position: 'relative', marginBottom: 8 }}>
+          <img
+            src={imageUrl}
+            alt=""
+            style={{ width: '100%', height: 60, objectFit: 'cover', display: 'block', border: '1px solid #2a2a2a' }}
+          />
+          <button
+            onClick={() => onUpdate(undefined)}
+            title="Remove image"
+            style={{
+              position: 'absolute',
+              top: 4,
+              right: 4,
+              background: 'rgba(0,0,0,0.7)',
+              border: 'none',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: 11,
+              cursor: 'pointer',
+              padding: '2px 6px',
+              lineHeight: 1.4,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #2a2a2a', marginBottom: 8 }}>
+        {(['upload', 'url'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              borderBottom: tab === t ? '2px solid #008c44' : '2px solid transparent',
+              padding: '5px 0',
+              cursor: 'pointer',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 11,
+              color: tab === t ? '#008c44' : 'rgba(255,255,255,0.35)',
+              marginBottom: -1,
+              transition: 'color 0.15s',
+            }}
+          >
+            {t === 'upload' ? 'Upload' : 'URL'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'upload' ? (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,image/gif"
+            onChange={handleFile}
+            style={{ display: 'none' }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              width: '100%',
+              background: '#1a1a1a',
+              border: '1px dashed #3a3a3a',
+              color: 'rgba(255,255,255,0.5)',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 12,
+              cursor: 'pointer',
+              padding: '10px',
+              textAlign: 'center',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+          >
+            ↑ Choose file
+          </button>
+        </>
+      ) : (
+        <input
+          type="text"
+          value={imageUrl?.startsWith('data:') ? '' : (imageUrl ?? '')}
+          onChange={(e) => onUpdate(e.target.value || undefined)}
+          placeholder="https://..."
+          style={{ ...inputStyle }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function EditPanel({ slide, onChange, colorMode, onColorModeChange, slideColorMode, onSlideColorModeChange }: Props) {
   const update = (patch: Partial<SlideData>) => {
     onChange({ ...slide, ...patch } as SlideData);
   };
@@ -603,6 +837,80 @@ export default function EditPanel({ slide, onChange }: Props) {
         );
       }
 
+      case 'big-quote': {
+        const bqSlide = slide as BigQuoteSlideData;
+        return (
+          <>
+            <Field label="Quote" value={bqSlide.quote} onChange={(v) => update({ quote: v })} multiline />
+            <Field label="Attribution" value={bqSlide.attribution} onChange={(v) => update({ attribution: v })} />
+            <Field label="Role / Company" value={bqSlide.role ?? ''} onChange={(v) => update({ role: v })} />
+          </>
+        );
+      }
+
+      case 'two-col-media': {
+        const tcmSlide = slide as TwoColMediaSlideData;
+        return (
+          <>
+            <Field label="Eyebrow" value={tcmSlide.eyebrow ?? ''} onChange={(v) => update({ eyebrow: v })} />
+            <Field label="Headline" value={tcmSlide.headline} onChange={(v) => update({ headline: v })} multiline />
+            <Field label="Body" value={tcmSlide.body} onChange={(v) => update({ body: v })} multiline />
+          </>
+        );
+      }
+
+      case 'contact': {
+        const contactSlide = slide as ContactSlideData;
+        return (
+          <>
+            <Field label="Headline" value={contactSlide.headline} onChange={(v) => update({ headline: v })} />
+            {contactSlide.cards.map((card, i) => (
+              <div key={i} style={i === 0 ? {} : groupDividerStyle}>
+                <div style={groupLabelStyle}>Card {i + 1}</div>
+                <Field label="Name" value={card.name} onChange={(v) => {
+                  const cards = [...contactSlide.cards]; cards[i] = { ...cards[i], name: v }; update({ cards });
+                }} />
+                <Field label="Role" value={card.role} onChange={(v) => {
+                  const cards = [...contactSlide.cards]; cards[i] = { ...cards[i], role: v }; update({ cards });
+                }} />
+                <Field label="LinkedIn" value={card.linkedin ?? ''} onChange={(v) => {
+                  const cards = [...contactSlide.cards]; cards[i] = { ...cards[i], linkedin: v || undefined }; update({ cards });
+                }} />
+                <Field label="Email" value={card.email ?? ''} onChange={(v) => {
+                  const cards = [...contactSlide.cards]; cards[i] = { ...cards[i], email: v || undefined }; update({ cards });
+                }} />
+                <Field label="Website" value={card.website ?? ''} onChange={(v) => {
+                  const cards = [...contactSlide.cards]; cards[i] = { ...cards[i], website: v || undefined }; update({ cards });
+                }} />
+              </div>
+            ))}
+          </>
+        );
+      }
+
+      case 'team': {
+        const teamSlide = slide as TeamSlideData;
+        return (
+          <>
+            <Field label="Headline" value={teamSlide.headline ?? ''} onChange={(v) => update({ headline: v })} />
+            {teamSlide.members.map((member, i) => (
+              <div key={i} style={i === 0 ? {} : groupDividerStyle}>
+                <div style={groupLabelStyle}>Member {i + 1}</div>
+                <Field label="Name" value={member.name} onChange={(v) => {
+                  const members = [...teamSlide.members]; members[i] = { ...members[i], name: v }; update({ members });
+                }} />
+                <Field label="Role" value={member.role} onChange={(v) => {
+                  const members = [...teamSlide.members]; members[i] = { ...members[i], role: v }; update({ members });
+                }} />
+                <Field label="Photo URL" value={member.imageUrl ?? ''} onChange={(v) => {
+                  const members = [...teamSlide.members]; members[i] = { ...members[i], imageUrl: v || undefined }; update({ members });
+                }} />
+              </div>
+            ))}
+          </>
+        );
+      }
+
       default:
         return null;
     }
@@ -623,6 +931,10 @@ export default function EditPanel({ slide, onChange }: Props) {
       case 'feature-list': return 'Feature List';
       case 'customer-story': return 'Customer Story';
       case 'checklist': return 'Checklist';
+      case 'big-quote': return 'Big Quote';
+      case 'two-col-media': return '2 Col + Media';
+      case 'contact': return 'Contact';
+      case 'team': return 'Team';
       default: return 'Slide';
     }
   };
@@ -682,6 +994,150 @@ export default function EditPanel({ slide, onChange }: Props) {
           padding: '20px',
         }}
       >
+        {/* Color mode pickers */}
+        <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+          {/* Deck-wide color mode */}
+          <label style={labelStyle}>Deck Color</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 16 }}>
+            {(Object.values(THEMES) as typeof THEMES[ColorMode][]).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onColorModeChange(t.id)}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  border: `1px solid ${colorMode === t.id ? t.accent : '#2a2a2a'}`,
+                  padding: '7px 8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 5,
+                  transition: 'border-color 0.15s',
+                  background: colorMode === t.id ? 'rgba(255,255,255,0.04)' : 'transparent',
+                }}
+              >
+                <div style={{ display: 'flex', height: 12, overflow: 'hidden' }}>
+                  <div style={{ flex: 2, background: t.darkBg }} />
+                  <div style={{ flex: 3, background: t.lightBg }} />
+                  <div style={{ width: 4, background: t.accent, flexShrink: 0 }} />
+                </div>
+                <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 8, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: colorMode === t.id ? t.accent : 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {t.label}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Per-slide color override */}
+          <label style={labelStyle}>This Slide</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+            {/* "Default" option */}
+            <button
+              onClick={() => onSlideColorModeChange(undefined)}
+              title="Use deck color"
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                border: `1px solid ${slideColorMode === undefined ? 'rgba(255,255,255,0.5)' : '#2a2a2a'}`,
+                padding: '7px 4px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 5,
+                transition: 'border-color 0.15s',
+                background: slideColorMode === undefined ? 'rgba(255,255,255,0.06)' : 'transparent',
+              }}
+            >
+              <div style={{ display: 'flex', height: 12, width: '100%', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, lineHeight: 1 }}>—</span>
+              </div>
+              <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 7, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: slideColorMode === undefined ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)' }}>
+                Default
+              </div>
+            </button>
+            {/* Color options */}
+            {(Object.values(THEMES) as typeof THEMES[ColorMode][]).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onSlideColorModeChange(t.id)}
+                title={t.label}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  border: `1px solid ${slideColorMode === t.id ? t.accent : '#2a2a2a'}`,
+                  padding: '7px 4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 5,
+                  transition: 'border-color 0.15s',
+                  background: slideColorMode === t.id ? 'rgba(255,255,255,0.04)' : 'transparent',
+                }}
+              >
+                <div style={{ display: 'flex', height: 12, width: '100%', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, background: t.darkBg }} />
+                  <div style={{ flex: 1, background: t.accent }} />
+                </div>
+                <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 7, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: slideColorMode === t.id ? t.accent : 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
+                  {t.id.charAt(0).toUpperCase() + t.id.slice(1)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Logo toggle */}
+        <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+          <label style={labelStyle}>Logo</label>
+          <button
+            onClick={() => update({ hideLogo: !slide.hideLogo })}
+            style={{
+              all: 'unset',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 20,
+                borderRadius: 10,
+                background: !slide.hideLogo ? '#008c44' : '#2a2a2a',
+                position: 'relative',
+                flexShrink: 0,
+                transition: 'background 0.15s',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  left: !slide.hideLogo ? 18 : 2,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  background: 'white',
+                  transition: 'left 0.15s',
+                }}
+              />
+            </div>
+            <AirOpsLogo width={48} color={!slide.hideLogo ? '#008c44' : 'rgba(255,255,255,0.2)'} />
+          </button>
+        </div>
+
+        {/* Image upload + Giphy (for slides that support it) */}
+        {(slide.type === 'cover' || slide.type === 'quote' || slide.type === 'big-quote' || slide.type === 'two-col-media') && (
+          <>
+            <ImageSection
+              imageUrl={(slide as { imageUrl?: string }).imageUrl}
+              onUpdate={(url) => update({ imageUrl: url } as Partial<SlideData>)}
+            />
+            <GiphySearch onSelect={(url) => update({ imageUrl: url } as Partial<SlideData>)} />
+          </>
+        )}
+
         {panelContent()}
       </div>
     </div>

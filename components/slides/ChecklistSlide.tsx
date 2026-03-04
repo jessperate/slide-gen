@@ -1,34 +1,38 @@
 'use client';
 
 import { ChecklistSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: ChecklistSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<ChecklistSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function ChecklistSlide({ data, interactive = true, onUpdate }: Props) {
+export default function ChecklistSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-right */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {/* AirOps logo bottom-left */}
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* Headline */}
       <div
@@ -42,7 +46,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate }: P
           fontFamily: '"Serrif VF", serif',
           fontSize: 44,
           fontWeight: 400,
-          color: '#000d05',
+          color: theme.textOnLight,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           outline: 'none',
@@ -68,7 +72,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate }: P
               height: 88,
               display: 'flex',
               alignItems: 'center',
-              borderBottom: '1px solid #d4e8da',
+              borderBottom: `1px solid ${theme.stroke}`,
               gap: 0,
             }}
           >
@@ -82,8 +86,8 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate }: P
               style={{
                 width: 24,
                 height: 24,
-                border: '2px solid #008c44',
-                background: item.checked ? '#008c44' : 'transparent',
+                border: `2px solid ${theme.accentMid}`,
+                background: item.checked ? theme.accentMid : 'transparent',
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -111,7 +115,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate }: P
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#000d05',
+                color: theme.textOnLight,
                 marginLeft: 16,
                 width: 240,
                 flexShrink: 0,
@@ -137,7 +141,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate }: P
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
-                color: '#676c79',
+                color: theme.mutedOnLight,
                 lineHeight: 1.5,
                 flex: 1,
                 marginLeft: 24,

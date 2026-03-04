@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { SlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import CoverSlide from './slides/CoverSlide';
 import SectionSlide from './slides/SectionSlide';
 import DiagramSlide from './slides/DiagramSlide';
@@ -15,6 +16,10 @@ import ThreeColSlide from './slides/ThreeColSlide';
 import FeatureListSlide from './slides/FeatureListSlide';
 import CustomerStorySlide from './slides/CustomerStorySlide';
 import ChecklistSlide from './slides/ChecklistSlide';
+import BigQuoteSlide from './slides/BigQuoteSlide';
+import TwoColMediaSlide from './slides/TwoColMediaSlide';
+import ContactSlide from './slides/ContactSlide';
+import TeamSlide from './slides/TeamSlide';
 
 interface Props {
   slide: SlideData;
@@ -22,13 +27,15 @@ interface Props {
   className?: string;
   style?: React.CSSProperties;
   onUpdate?: (updates: Partial<SlideData>) => void;
+  theme?: SlideTheme;
 }
 
 export function renderSlide(
   slide: SlideData,
   interactive: boolean = true,
   onUpdate?: (updates: Partial<SlideData>) => void,
-) {
+  theme: SlideTheme = DEFAULT_THEME,
+): React.ReactElement | null {
   switch (slide.type) {
     case 'cover':
       return (
@@ -36,6 +43,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'section':
@@ -44,6 +52,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'diagram':
@@ -52,6 +61,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'stats':
@@ -60,6 +70,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'content':
@@ -68,6 +79,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'back-cover':
@@ -76,6 +88,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'hero':
@@ -84,6 +97,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'agenda':
@@ -92,6 +106,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'quote':
@@ -100,6 +115,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'three-col':
@@ -108,6 +124,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'feature-list':
@@ -116,6 +133,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'customer-story':
@@ -124,6 +142,7 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     case 'checklist':
@@ -132,6 +151,43 @@ export function renderSlide(
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'big-quote':
+      return (
+        <BigQuoteSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'two-col-media':
+      return (
+        <TwoColMediaSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'contact':
+      return (
+        <ContactSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'team':
+      return (
+        <TeamSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
         />
       );
     default:
@@ -139,7 +195,7 @@ export function renderSlide(
   }
 }
 
-export default function SlideCanvas({ slide, interactive = true, className, style, onUpdate }: Props) {
+export default function SlideCanvas({ slide, interactive = true, className, style, onUpdate, theme = DEFAULT_THEME }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -186,7 +242,7 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
           flexShrink: 0,
         }}
       >
-        {renderSlide(slide, interactive, onUpdate)}
+        {renderSlide(slide, interactive, onUpdate, theme)}
       </div>
     </div>
   );

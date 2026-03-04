@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SlideData, defaultSlides } from '@/lib/slides';
+import { ColorMode, THEMES, DEFAULT_THEME } from '@/lib/themes';
 import ThumbnailRail from '@/components/ThumbnailRail';
 import EditPanel from '@/components/EditPanel';
 import AddSlideModal from '@/components/AddSlideModal';
@@ -12,6 +13,8 @@ import { renderSlide } from '@/components/SlideCanvas';
 const STORAGE_KEY = 'slidegen-current-deck';
 const SAVED_KEY = 'slidegen-saved-deck';
 const NOTES_KEY = 'slidegen-notes';
+const THEME_KEY = 'slidegen-theme';
+const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
 
 export default function SlideGenPage() {
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -26,6 +29,9 @@ export default function SlideGenPage() {
   const [presenting, setPresenting] = useState(false);
   const [presentIndex, setPresentIndex] = useState(0);
   const [presentScale, setPresentScale] = useState(1);
+  const [showPresentControls, setShowPresentControls] = useState(false);
+  const [colorMode, setColorMode] = useState<ColorMode>('green');
+  const [slideColorOverrides, setSlideColorOverrides] = useState<Record<string, ColorMode>>({});
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -40,12 +46,16 @@ export default function SlideGenPage() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSlides(parsed);
-          setShowOnboarding(false);
+          // Onboarding always shows on landing — user can skip to continue previous deck
         }
       }
       const savedNotes = localStorage.getItem(NOTES_KEY);
       if (savedNotes) setNotes(JSON.parse(savedNotes));
       setHasSavedDeck(!!localStorage.getItem(SAVED_KEY));
+      const savedTheme = localStorage.getItem(THEME_KEY) as ColorMode | null;
+      if (savedTheme && THEMES[savedTheme]) setColorMode(savedTheme);
+      const savedSlideColors = localStorage.getItem(SLIDE_COLORS_KEY);
+      if (savedSlideColors) setSlideColorOverrides(JSON.parse(savedSlideColors));
     } catch {}
   }, []);
 
@@ -58,6 +68,16 @@ export default function SlideGenPage() {
   useEffect(() => {
     try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch {}
   }, [notes]);
+
+  // Autosave theme
+  useEffect(() => {
+    try { localStorage.setItem(THEME_KEY, colorMode); } catch {}
+  }, [colorMode]);
+
+  // Autosave slide color overrides
+  useEffect(() => {
+    try { localStorage.setItem(SLIDE_COLORS_KEY, JSON.stringify(slideColorOverrides)); } catch {}
+  }, [slideColorOverrides]);
 
   // Canvas scale
   useEffect(() => {
@@ -111,6 +131,7 @@ export default function SlideGenPage() {
 
   const startPresentation = () => {
     setPresentIndex(activeIndex);
+    setShowPresentControls(false);
     setPresenting(true);
     presentContainerRef.current?.requestFullscreen?.().catch(() => {});
   };
@@ -167,9 +188,11 @@ export default function SlideGenPage() {
     const { openInGoogleSlides } = await import('@/lib/googleSlides');
     setExportProgress({ current: 0, total: slides.length });
     try {
-      const blob = await buildPptxBlob(slides, renderSlide, (current, total) => {
-        setExportProgress({ current, total });
-      });
+      const blob = await buildPptxBlob(
+        slides,
+        (s, interactive) => renderSlide(s, interactive, undefined, getSlideTheme(s)),
+        (current, total) => { setExportProgress({ current, total }); },
+      );
       setExportProgress({ current: slides.length, total: slides.length });
       await openInGoogleSlides(blob);
     } catch (err) {
@@ -179,6 +202,9 @@ export default function SlideGenPage() {
     }
   };
 
+  const theme = THEMES[colorMode] ?? DEFAULT_THEME;
+  const getSlideTheme = (slide: SlideData) => THEMES[slideColorOverrides[slide.id] ?? colorMode] ?? theme;
+  const activeSlideTheme = activeSlide ? getSlideTheme(activeSlide) : theme;
   const slideWidth = Math.round(1280 * canvasScale);
   const slideHeight = Math.round(720 * canvasScale);
   const activeNote = activeSlide ? (notes[activeSlide.id] ?? '') : '';
@@ -194,7 +220,7 @@ export default function SlideGenPage() {
         {slides.map((slide) => (
           <div key={slide.id} className="slide-for-print"
             style={{ width: 1280, height: 720, position: 'relative', overflow: 'hidden' }}>
-            {renderSlide(slide, false)}
+            {renderSlide(slide, false, undefined, getSlideTheme(slide))}
           </div>
         ))}
       </div>
@@ -213,6 +239,8 @@ export default function SlideGenPage() {
             justifyContent: 'center',
           }}
           onClick={() => setPresentIndex((i) => Math.min(slides.length - 1, i + 1))}
+          onMouseMove={() => setShowPresentControls(true)}
+          onMouseLeave={() => setShowPresentControls(false)}
         >
           {/* Slide */}
           <div
@@ -234,7 +262,7 @@ export default function SlideGenPage() {
                 left: 0,
               }}
             >
-              {renderSlide(slides[presentIndex], false)}
+              {renderSlide(slides[presentIndex], false, undefined, getSlideTheme(slides[presentIndex]))}
             </div>
           </div>
 
@@ -260,6 +288,9 @@ export default function SlideGenPage() {
               alignItems: 'center',
               gap: 6,
               backdropFilter: 'blur(8px)',
+              opacity: showPresentControls ? 1 : 0,
+              transition: 'opacity 0.25s',
+              pointerEvents: showPresentControls ? 'auto' : 'none',
             }}
           >
             ✕ Exit
@@ -282,6 +313,9 @@ export default function SlideGenPage() {
               padding: '10px 14px',
               backdropFilter: 'blur(8px)',
               lineHeight: 1,
+              opacity: showPresentControls ? 1 : 0,
+              transition: 'opacity 0.25s',
+              pointerEvents: showPresentControls ? 'auto' : 'none',
             }}
           >
             ←
@@ -304,6 +338,9 @@ export default function SlideGenPage() {
               padding: '10px 14px',
               backdropFilter: 'blur(8px)',
               lineHeight: 1,
+              opacity: showPresentControls ? 1 : 0,
+              transition: 'opacity 0.25s',
+              pointerEvents: showPresentControls ? 'auto' : 'none',
             }}
           >
             →
@@ -427,9 +464,9 @@ export default function SlideGenPage() {
           <button
             onClick={startPresentation}
             style={{
-              background: '#00ff64',
+              background: theme.accent,
               border: 'none',
-              color: '#002910',
+              color: theme.darkBg,
               fontFamily: '"Saans", sans-serif',
               fontSize: 13,
               fontWeight: 700,
@@ -514,22 +551,53 @@ export default function SlideGenPage() {
           </button>
 
           <button
-            onClick={() => window.print()}
-            style={{
-              background: '#008c44', border: '1px solid #008c44', color: 'white',
-              fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', padding: '5px 14px', transition: 'background 0.15s',
+            onClick={async () => {
+              if (exportProgress) return;
+              setExportProgress({ current: 0, total: slides.length });
+              try {
+                const { exportToPdf } = await import('@/lib/exportPdf');
+                await exportToPdf(
+                  slides,
+                  (s, interactive) => renderSlide(s, interactive, undefined, getSlideTheme(s)),
+                  (current, total) => setExportProgress({ current, total }),
+                );
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setExportProgress(null);
+              }
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#002910'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#008c44'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#008c44'; (e.currentTarget as HTMLButtonElement).style.color = 'white'; }}
+            disabled={!!exportProgress}
+            style={{
+              background: exportProgress ? '#005c2d' : '#008c44',
+              border: `1px solid ${exportProgress ? '#005c2d' : '#008c44'}`,
+              color: 'white',
+              fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500,
+              cursor: exportProgress ? 'default' : 'pointer', padding: '5px 14px', transition: 'background 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => { if (!exportProgress) { (e.currentTarget as HTMLButtonElement).style.background = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#002910'; } }}
+            onMouseLeave={(e) => { if (!exportProgress) { (e.currentTarget as HTMLButtonElement).style.background = '#008c44'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#008c44'; (e.currentTarget as HTMLButtonElement).style.color = 'white'; } }}
           >
-            Export
+            {exportProgress ? `PDF ${exportProgress.current}/${exportProgress.total}…` : '↓ Export PDF'}
           </button>
         </div>
 
         {/* Thumbnail rail */}
         <div style={{ gridArea: 'rail', overflow: 'hidden' }}>
-          <ThumbnailRail slides={slides} activeIndex={activeIndex} onSelect={setActiveIndex} />
+          <ThumbnailRail
+            slides={slides}
+            activeIndex={activeIndex}
+            onSelect={setActiveIndex}
+            onReorder={(newSlides) => {
+              const activeId = slides[activeIndex]?.id;
+              setSlides(newSlides);
+              const newIdx = newSlides.findIndex((s) => s.id === activeId);
+              if (newIdx >= 0) setActiveIndex(newIdx);
+            }}
+            theme={theme}
+            slideColorOverrides={slideColorOverrides}
+          />
         </div>
 
         {/* Main canvas */}
@@ -543,7 +611,7 @@ export default function SlideGenPage() {
           {activeSlide && (
             <div style={{ width: slideWidth, height: slideHeight, position: 'relative', flexShrink: 0, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
               <div style={{ transformOrigin: 'top left', transform: `scale(${canvasScale})`, width: 1280, height: 720, position: 'absolute', top: 0, left: 0 }}>
-                {renderSlide(activeSlide, true, updateActiveSlide)}
+                {renderSlide(activeSlide, true, updateActiveSlide, activeSlideTheme)}
               </div>
             </div>
           )}
@@ -630,7 +698,23 @@ export default function SlideGenPage() {
 
         {/* Edit panel */}
         <div style={{ gridArea: 'panel', overflow: 'hidden' }}>
-          {activeSlide && <EditPanel slide={activeSlide} onChange={updateSlide} />}
+          {activeSlide && (
+            <EditPanel
+              slide={activeSlide}
+              onChange={updateSlide}
+              colorMode={colorMode}
+              onColorModeChange={setColorMode}
+              slideColorMode={slideColorOverrides[activeSlide.id]}
+              onSlideColorModeChange={(mode) => {
+                setSlideColorOverrides((prev) => {
+                  const next = { ...prev };
+                  if (mode === undefined) delete next[activeSlide.id];
+                  else next[activeSlide.id] = mode;
+                  return next;
+                });
+              }}
+            />
+          )}
         </div>
 
         {/* Bottom bar */}

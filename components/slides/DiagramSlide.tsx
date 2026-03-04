@@ -1,27 +1,23 @@
 'use client';
 
 import { DiagramSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: DiagramSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<DiagramSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-const COLUMN_ACCENTS = ['#002910', '#008c44', '#00ff64'];
-const COLUMN_TEXT_ON_ACCENT = ['#00ff64', '#ffffff', '#002910'];
-
-export default function DiagramSlide({ data, interactive = true, onUpdate }: Props) {
-  const colCount = data.columns.length;
-  const colWidth = Math.floor(1280 / colCount);
-
+export default function DiagramSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -29,12 +25,14 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
       }}
     >
       {/* AirOps logo bottom-left */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48, zIndex: 10 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48, zIndex: 10 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64', zIndex: 10 }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent, zIndex: 10 }} />
 
       {/* Headline — top strip */}
       <div
@@ -44,7 +42,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
           left: 0,
           right: 0,
           height: 100,
-          background: '#EEF5F1',
+          background: theme.lightBg,
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 64,
@@ -59,7 +57,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
             fontFamily: '"Serrif VF", serif',
             fontSize: 44,
             fontWeight: 400,
-            color: '#000d05',
+            color: theme.textOnLight,
             letterSpacing: '-0.02em',
             lineHeight: 1.1,
             outline: 'none',
@@ -82,8 +80,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
         }}
       >
         {data.columns.map((col, i) => {
-          const accent = COLUMN_ACCENTS[i % COLUMN_ACCENTS.length];
-          const accentText = COLUMN_TEXT_ON_ACCENT[i % COLUMN_TEXT_ON_ACCENT.length];
+          const colTheme = theme.diagramColBgs[i % theme.diagramColBgs.length];
           return (
             <div
               key={i}
@@ -91,7 +88,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
-                borderLeft: i > 0 ? '1px solid #d4e8da' : 'none',
+                borderLeft: i > 0 ? `1px solid ${theme.stroke}` : 'none',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -99,7 +96,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
               {/* Colored header band */}
               <div
                 style={{
-                  background: accent,
+                  background: colTheme.bg,
                   padding: '32px 40px 28px',
                   flexShrink: 0,
                 }}
@@ -111,7 +108,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                     fontSize: 11,
                     fontWeight: 500,
                     letterSpacing: '0.12em',
-                    color: accentText,
+                    color: colTheme.text,
                     opacity: 0.5,
                     marginBottom: 12,
                   }}
@@ -132,7 +129,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                     fontFamily: '"Serrif VF", serif',
                     fontSize: 32,
                     fontWeight: 400,
-                    color: accentText,
+                    color: colTheme.text,
                     letterSpacing: '-0.01em',
                     lineHeight: 1.15,
                     outline: 'none',
@@ -151,7 +148,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  background: i % 2 === 1 ? '#ffffff' : '#EEF5F1',
+                  background: i % 2 === 1 ? '#ffffff' : theme.lightBg,
                 }}
               >
                 <div
@@ -166,7 +163,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                     fontFamily: '"Saans", sans-serif',
                     fontSize: 16,
                     fontWeight: 400,
-                    color: '#1a2e20',
+                    color: theme.bodyOnLight,
                     lineHeight: 1.65,
                     outline: 'none',
                     cursor: onUpdate ? 'text' : 'default',
@@ -193,9 +190,9 @@ export default function DiagramSlide({ data, interactive = true, onUpdate }: Pro
                       fontWeight: 600,
                       letterSpacing: '0.12em',
                       textTransform: 'uppercase',
-                      color: '#008c44',
+                      color: theme.accentMid,
                       background: 'transparent',
-                      border: '1px solid #008c44',
+                      border: `1px solid ${theme.accentMid}`,
                       padding: '5px 12px',
                       outline: 'none',
                       cursor: onUpdate ? 'text' : 'default',

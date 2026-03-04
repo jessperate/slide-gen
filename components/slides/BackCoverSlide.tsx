@@ -1,21 +1,23 @@
 'use client';
 
 import { BackCoverSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: BackCoverSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<BackCoverSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function BackCoverSlide({ data, interactive = true, onUpdate }: Props) {
+export default function BackCoverSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#002910',
+        background: theme.darkBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -26,13 +28,15 @@ export default function BackCoverSlide({ data, interactive = true, onUpdate }: P
         justifyContent: 'center',
       }}
     >
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* AirOps logo */}
-      <div style={{ marginBottom: 32 }}>
-        <AirOpsLogo color="#ffffff" width={220} />
-      </div>
+      {!data.hideLogo && (
+        <div style={{ marginBottom: 32 }}>
+          <AirOpsLogo color={theme.logoOnDark} width={220} />
+        </div>
+      )}
 
       {/* CTA */}
       <div

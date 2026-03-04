@@ -1,40 +1,44 @@
 'use client';
 
 import { HeroSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: HeroSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<HeroSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function HeroSlide({ data, interactive = true, onUpdate }: Props) {
+export default function HeroSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#002910',
+        background: theme.darkBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
         fontFamily: '"Saans", sans-serif',
-        backgroundImage: 'radial-gradient(circle, rgba(0,255,100,0.12) 1px, transparent 1px)',
+        backgroundImage: `radial-gradient(circle, ${theme.heroDotPattern} 1px, transparent 1px)`,
         backgroundSize: '20px 20px',
       }}
     >
       {/* AirOps logo top-center */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 40,
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      >
-        <AirOpsLogo color="#ffffff" width={120} />
-      </div>
+      {!data.hideLogo && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 40,
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <AirOpsLogo color={theme.logoOnDark} width={120} />
+        </div>
+      )}
 
       {/* Headline */}
       <div
@@ -50,7 +54,7 @@ export default function HeroSlide({ data, interactive = true, onUpdate }: Props)
           fontFamily: '"Serrif VF", serif',
           fontSize: 96,
           fontWeight: 400,
-          color: '#00ff64',
+          color: theme.accent,
           textAlign: 'center',
           letterSpacing: '-0.02em',
           lineHeight: 1,

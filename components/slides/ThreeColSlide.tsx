@@ -1,34 +1,38 @@
 'use client';
 
 import { ThreeColSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: ThreeColSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<ThreeColSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function ThreeColSlide({ data, interactive = true, onUpdate }: Props) {
+export default function ThreeColSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-right */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {/* AirOps logo bottom-left */}
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* Page headline */}
       <div
@@ -42,7 +46,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
           fontFamily: '"Serrif VF", serif',
           fontSize: 44,
           fontWeight: 400,
-          color: '#000d05',
+          color: theme.textOnLight,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           outline: 'none',
@@ -60,7 +64,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
           left: 64,
           right: 64,
           height: 1,
-          background: '#d4e8da',
+          background: theme.stroke,
         }}
       />
 
@@ -85,7 +89,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
               paddingTop: 24,
               paddingRight: i < data.columns.length - 1 ? 32 : 0,
               paddingLeft: i > 0 ? 32 : 0,
-              borderLeft: i > 0 ? '1px solid #d4e8da' : 'none',
+              borderLeft: i > 0 ? `1px solid ${theme.stroke}` : 'none',
             }}
           >
             {/* Icon */}
@@ -100,7 +104,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 32,
-                color: '#008c44',
+                color: theme.accentMid,
                 marginBottom: 8,
                 lineHeight: 1,
                 outline: 'none',
@@ -124,7 +128,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
                 fontWeight: 500,
-                color: '#000d05',
+                color: theme.textOnLight,
                 marginBottom: 8,
                 lineHeight: 1.3,
                 outline: 'none',
@@ -140,7 +144,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
               style={{
                 width: '100%',
                 height: 1,
-                background: '#d4e8da',
+                background: theme.stroke,
                 marginBottom: 16,
               }}
             />
@@ -158,7 +162,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate }: Pr
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
-                color: '#676c79',
+                color: theme.mutedOnLight,
                 lineHeight: 1.6,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',

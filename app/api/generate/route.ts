@@ -53,13 +53,39 @@ RULES:
 - Back-cover CTA: action verb + outcome ("See how [company/product] can [benefit]")
 - Return ONLY the JSON array. No explanation, no markdown fences, no other text.`;
 
+const MAX_CONTEXT_CHARS = 6000;
+
+async function fetchUrlText(url: string): Promise<string> {
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  const html = await res.text();
+  // Strip HTML tags and collapse whitespace
+  const text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.slice(0, MAX_CONTEXT_CHARS);
+}
+
 export async function POST(request: Request) {
   try {
-    const { topic, audience, tone } = await request.json();
+    const { topic, audience, tone, context, contextUrl } = await request.json();
+
+    let additionalContext = '';
+    if (contextUrl) {
+      try {
+        additionalContext = await fetchUrlText(contextUrl);
+      } catch {
+        // If fetch fails, ignore and proceed without context
+      }
+    } else if (context) {
+      additionalContext = (context as string).slice(0, MAX_CONTEXT_CHARS);
+    }
 
     const userMessage = `Create a presentation deck about: "${topic}"
 Audience: ${audience || 'business professionals'}
-Tone: ${tone || 'persuasive and clear'}
+Tone: ${tone || 'persuasive and clear'}${additionalContext ? `\n\nAdditional context for the deck:\n${additionalContext}` : ''}
 
 Return a JSON array of 9–11 slides following the narrative arc in your instructions.`;
 

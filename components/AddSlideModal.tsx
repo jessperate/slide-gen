@@ -21,10 +21,14 @@ const slideTypes = [
   { type: 'hero', label: 'Hero' },
   { type: 'agenda', label: 'Agenda' },
   { type: 'quote', label: 'Quote' },
+  { type: 'big-quote', label: 'Big Quote' },
   { type: 'three-col', label: '3 Columns' },
   { type: 'feature-list', label: 'Feature List' },
   { type: 'customer-story', label: 'Customer Story' },
   { type: 'checklist', label: 'Checklist' },
+  { type: 'two-col-media', label: '2 Col + Media' },
+  { type: 'contact', label: 'Contact' },
+  { type: 'team', label: 'Team' },
 ] as const;
 
 export default function AddSlideModal({ onAdd, onClose }: Props) {

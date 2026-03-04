@@ -8,7 +8,7 @@ interface Props {
   onSkip: () => void;
 }
 
-const TONES = ['Persuasive', 'Storytelling', 'Educational', 'Formal'];
+const TONES = ['Persuasive', 'Storytelling', 'Educational', 'Formal', 'Funny'];
 
 export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [topic, setTopic] = useState('');
@@ -16,6 +16,10 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [tone, setTone] = useState('Persuasive');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [contextOpen, setContextOpen] = useState(false);
+  const [contextTab, setContextTab] = useState<'paste' | 'url'>('paste');
+  const [contextText, setContextText] = useState('');
+  const [contextUrl, setContextUrl] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -30,7 +34,13 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, audience, tone }),
+        body: JSON.stringify({
+          topic,
+          audience,
+          tone,
+          context: contextTab === 'paste' && contextText.trim() ? contextText : undefined,
+          contextUrl: contextTab === 'url' && contextUrl.trim() ? contextUrl : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.slides) throw new Error(data.error || 'Failed');
@@ -131,6 +141,118 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
           onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.4)')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
         />
+
+        {/* Add context expander */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setContextOpen((o) => !o)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 12,
+              color: contextOpen ? 'rgba(0,255,100,0.7)' : 'rgba(255,255,255,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = contextOpen ? 'rgba(0,255,100,0.9)' : 'rgba(255,255,255,0.6)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = contextOpen ? 'rgba(0,255,100,0.7)' : 'rgba(255,255,255,0.35)')}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1 }}>{contextOpen ? '−' : '＋'}</span>
+            Add context
+          </button>
+
+          {contextOpen && (
+            <div
+              style={{
+                marginTop: 10,
+                border: '1px solid rgba(0,255,100,0.15)',
+                background: 'rgba(0,255,100,0.03)',
+              }}
+            >
+              {/* Tabs */}
+              <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,255,100,0.1)' }}>
+                {(['paste', 'url'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setContextTab(tab)}
+                    style={{
+                      flex: 1,
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: contextTab === tab ? '2px solid rgba(0,255,100,0.6)' : '2px solid transparent',
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      fontFamily: '"Saans", sans-serif',
+                      fontSize: 12,
+                      color: contextTab === tab ? 'rgba(0,255,100,0.8)' : 'rgba(255,255,255,0.35)',
+                      transition: 'color 0.15s',
+                      marginBottom: -1,
+                    }}
+                  >
+                    {tab === 'paste' ? 'Paste content' : 'From URL'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab content */}
+              <div style={{ padding: '12px 14px' }}>
+                {contextTab === 'paste' ? (
+                  <textarea
+                    value={contextText}
+                    onChange={(e) => setContextText(e.target.value)}
+                    placeholder="Paste Notion content, meeting notes, Slack threads, doc excerpts…"
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ffffff',
+                      fontFamily: '"Saans", sans-serif',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      padding: '10px 12px',
+                      resize: 'none',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.3)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+                  />
+                ) : (
+                  <input
+                    type="url"
+                    value={contextUrl}
+                    onChange={(e) => setContextUrl(e.target.value)}
+                    placeholder="https://notion.so/… or any public URL"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ffffff',
+                      fontFamily: '"Saans", sans-serif',
+                      fontSize: 13,
+                      padding: '10px 12px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.3)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+                  />
+                )}
+                <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 8, lineHeight: 1.5 }}>
+                  {contextTab === 'paste'
+                    ? 'Claude will use this as background context when building your deck.'
+                    : 'Works with publicly shared Notion pages, websites, or any public URL.'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Row: audience + tone */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>

@@ -1,15 +1,17 @@
 'use client';
 
 import { FeatureListSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: FeatureListSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<FeatureListSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function FeatureListSlide({ data, interactive = true, onUpdate }: Props) {
+export default function FeatureListSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   const items = data.items.slice(0, 5);
 
   return (
@@ -17,20 +19,22 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-right */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {/* AirOps logo bottom-left */}
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* Headline */}
       <div
@@ -44,7 +48,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
           fontFamily: '"Serrif VF", serif',
           fontSize: 44,
           fontWeight: 400,
-          color: '#000d05',
+          color: theme.textOnLight,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           outline: 'none',
@@ -70,7 +74,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
               height: 96,
               display: 'flex',
               alignItems: 'center',
-              borderBottom: '1px solid #d4e8da',
+              borderBottom: `1px solid ${theme.stroke}`,
               gap: 0,
             }}
           >
@@ -85,7 +89,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
               }}
               style={{
                 fontSize: 28,
-                color: '#008c44',
+                color: theme.accentMid,
                 width: 40,
                 flexShrink: 0,
                 lineHeight: 1,
@@ -110,7 +114,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#000d05',
+                color: theme.textOnLight,
                 width: 220,
                 flexShrink: 0,
                 marginLeft: 16,
@@ -136,7 +140,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
-                color: '#676c79',
+                color: theme.mutedOnLight,
                 lineHeight: 1.5,
                 flex: 1,
                 marginLeft: 24,

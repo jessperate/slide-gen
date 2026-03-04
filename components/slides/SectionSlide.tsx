@@ -1,20 +1,22 @@
 'use client';
 
 import { SectionSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 
 interface Props {
   data: SectionSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<SectionSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function SectionSlide({ data, interactive = true, onUpdate }: Props) {
+export default function SectionSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#002910',
+        background: theme.darkBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -32,7 +34,7 @@ export default function SectionSlide({ data, interactive = true, onUpdate }: Pro
           fontWeight: 500,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.4)',
+          color: theme.mutedOnDark,
           display: 'flex',
           gap: 12,
           alignItems: 'center',
@@ -90,7 +92,7 @@ export default function SectionSlide({ data, interactive = true, onUpdate }: Pro
           style={{
             width: 3,
             height: 48,
-            background: '#008c44',
+            background: theme.accentMid,
             flexShrink: 0,
           }}
         />
@@ -104,7 +106,7 @@ export default function SectionSlide({ data, interactive = true, onUpdate }: Pro
             fontFamily: '"Serrif VF", serif',
             fontSize: 56,
             fontWeight: 400,
-            color: 'white',
+            color: theme.textOnDark,
             letterSpacing: '-0.02em',
             lineHeight: 1.15,
             whiteSpace: 'pre-line',

@@ -1,24 +1,23 @@
 'use client';
 
 import { StatsSlideData, METRIC_COLORS } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: StatsSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<StatsSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function StatsSlide({ data, interactive = true, onUpdate }: Props) {
-  const metricsCount = data.metrics.length;
-  const metricWidth = (1184 - (metricsCount - 1) * 16) / metricsCount;
-
+export default function StatsSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -26,12 +25,14 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
       }}
     >
       {/* AirOps logo bottom-left */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* Left column: headline + thesis */}
       <div
@@ -55,7 +56,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
             fontFamily: '"Serrif VF", serif',
             fontSize: 44,
             fontWeight: 400,
-            color: '#000d05',
+            color: theme.textOnLight,
             letterSpacing: '-0.02em',
             lineHeight: 1.1,
             marginBottom: 32,
@@ -66,10 +67,10 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
           {data.headline}
         </div>
 
-        {/* Thesis — green left-border accent, no box */}
+        {/* Thesis */}
         <div
           style={{
-            borderLeft: '3px solid #008c44',
+            borderLeft: `3px solid ${theme.accentMid}`,
             paddingLeft: 20,
           }}
         >
@@ -81,7 +82,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
               fontFamily: '"Saans", sans-serif',
               fontSize: 15,
               fontWeight: 400,
-              color: '#3a4a3e',
+              color: theme.bodyOnLight,
               lineHeight: 1.6,
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
@@ -100,7 +101,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
           bottom: 80,
           left: 592,
           width: 1,
-          background: '#d4e8da',
+          background: theme.stroke,
         }}
       />
 
@@ -122,7 +123,8 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
           <div
             key={i}
             style={{
-              background: METRIC_COLORS[metric.color] || '#F5F5E8',
+              background: theme.id === 'green' ? (METRIC_COLORS[metric.color] || '#F5F5E8') : '#ffffff',
+              border: theme.id === 'green' ? 'none' : `1px solid ${theme.stroke}`,
               padding: '28px 32px',
               display: 'flex',
               alignItems: 'baseline',
@@ -141,7 +143,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 56,
                 fontWeight: 400,
-                color: '#000d05',
+                color: theme.textOnLight,
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
                 flexShrink: 0,
@@ -163,7 +165,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
-                color: '#676c79',
+                color: theme.mutedOnLight,
                 lineHeight: 1.4,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',

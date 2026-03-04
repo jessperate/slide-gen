@@ -1,21 +1,23 @@
 'use client';
 
 import { CustomerStorySlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: CustomerStorySlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<CustomerStorySlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function CustomerStorySlide({ data, interactive = true, onUpdate }: Props) {
+export default function CustomerStorySlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
         width: 1280,
         height: 720,
-        background: '#EEF5F1',
+        background: theme.lightBg,
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -23,12 +25,14 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
       }}
     >
       {/* AirOps logo bottom-left */}
-      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
-        <AirOpsLogo color="#001408" width={80} />
-      </div>
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
-      {/* Green bottom bar */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
+      {/* Accent bottom bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent }} />
 
       {/* Customer label */}
       <div
@@ -42,7 +46,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
           fontFamily: '"Saans Mono", monospace',
           fontSize: 11,
           fontWeight: 500,
-          color: '#008c44',
+          color: theme.accentMid,
           textTransform: 'uppercase',
           letterSpacing: '0.12em',
           outline: 'none',
@@ -74,7 +78,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
             fontFamily: '"Serrif VF", serif',
             fontSize: 36,
             fontWeight: 400,
-            color: '#000d05',
+            color: theme.textOnLight,
             lineHeight: 1.25,
             marginBottom: 24,
             letterSpacing: '-0.01em',
@@ -94,7 +98,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
             fontFamily: '"Saans", sans-serif',
             fontSize: 14,
             fontWeight: 400,
-            color: '#3a4a3e',
+            color: theme.bodyOnLight,
             lineHeight: 1.65,
             marginBottom: 32,
             outline: 'none',
@@ -110,13 +114,13 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
             style={{
               width: 36,
               height: 36,
-              background: '#d4e8da',
+              background: theme.stroke,
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 14,
-              color: '#008c44',
+              color: theme.accentMid,
               fontWeight: 700,
             }}
           >
@@ -130,7 +134,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
               fontFamily: '"Saans", sans-serif',
               fontSize: 13,
               fontWeight: 600,
-              color: '#000d05',
+              color: theme.textOnLight,
               lineHeight: 1.3,
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
@@ -149,7 +153,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
           bottom: 64,
           left: 640,
           width: 1,
-          background: '#d4e8da',
+          background: theme.stroke,
         }}
       />
 
@@ -172,8 +176,8 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
             key={i}
             style={{
               background: '#ffffff',
-              border: '1px solid #d4e8da',
-              borderLeft: '3px solid #008c44',
+              border: `1px solid ${theme.stroke}`,
+              borderLeft: `3px solid ${theme.accentMid}`,
               padding: '20px 28px',
               display: 'flex',
               alignItems: 'baseline',
@@ -192,7 +196,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 48,
                 fontWeight: 400,
-                color: '#000d05',
+                color: theme.textOnLight,
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
                 flexShrink: 0,
@@ -214,7 +218,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate 
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 13,
                 fontWeight: 400,
-                color: '#676c79',
+                color: theme.mutedOnLight,
                 lineHeight: 1.4,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',

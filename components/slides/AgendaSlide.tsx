@@ -1,14 +1,16 @@
 'use client';
 
 import { AgendaSlideData } from '@/lib/slides';
+import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 
 interface Props {
   data: AgendaSlideData;
   interactive?: boolean;
   onUpdate?: (updates: Partial<AgendaSlideData>) => void;
+  theme?: SlideTheme;
 }
 
-export default function AgendaSlide({ data, interactive = true, onUpdate }: Props) {
+export default function AgendaSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   return (
     <div
       style={{
@@ -28,8 +30,8 @@ export default function AgendaSlide({ data, interactive = true, onUpdate }: Prop
           left: 0,
           width: 480,
           height: 720,
-          background: '#CCFFE0',
-          backgroundImage: 'radial-gradient(circle, rgba(0,100,40,0.25) 2px, transparent 2px)',
+          background: theme.agendaLeftBg,
+          backgroundImage: `radial-gradient(circle, ${theme.agendaDotPattern} 2px, transparent 2px)`,
           backgroundSize: '24px 24px',
           backgroundPosition: '16px 16px',
         }}
@@ -43,7 +45,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate }: Prop
           left: 480,
           width: 800,
           height: 720,
-          background: '#002910',
+          background: theme.darkBg,
         }}
       />
 
@@ -59,7 +61,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate }: Prop
           fontFamily: '"Serrif VF", serif',
           fontSize: 56,
           fontWeight: 400,
-          color: '#ffffff',
+          color: theme.textOnDark,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           outline: 'none',
@@ -94,7 +96,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate }: Prop
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 18,
                 fontWeight: 700,
-                color: '#008c44',
+                color: theme.accentMid,
                 minWidth: 28,
                 flexShrink: 0,
               }}
@@ -113,7 +115,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate }: Prop
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
                 fontWeight: 400,
-                color: '#EEF5F1',
+                color: theme.lightBg,
                 lineHeight: 1.4,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',

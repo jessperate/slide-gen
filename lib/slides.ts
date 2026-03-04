@@ -4,6 +4,11 @@ export interface CoverSlideData {
   eyebrow: string;
   headline: string;
   subheadline?: string;
+  hideLogo?: boolean;
+  imageUrl?: string;
+  imageX?: number;
+  imageY?: number;
+  imageZoom?: number;
 }
 
 export interface SectionSlideData {
@@ -12,6 +17,7 @@ export interface SectionSlideData {
   number: string;
   label: string;
   headline: string;
+  hideLogo?: boolean;
 }
 
 export interface DiagramColumn {
@@ -25,6 +31,7 @@ export interface DiagramSlideData {
   type: 'diagram';
   headline: string;
   columns: DiagramColumn[];
+  hideLogo?: boolean;
 }
 
 export interface Metric {
@@ -39,6 +46,7 @@ export interface StatsSlideData {
   headline: string;
   thesis: string;
   metrics: Metric[];
+  hideLogo?: boolean;
 }
 
 export interface ContentColumn {
@@ -51,6 +59,7 @@ export interface ContentSlideData {
   type: 'content';
   headline: string;
   columns: ContentColumn[];
+  hideLogo?: boolean;
 }
 
 export interface BackCoverSlideData {
@@ -58,6 +67,7 @@ export interface BackCoverSlideData {
   type: 'back-cover';
   cta: string;
   url: string;
+  hideLogo?: boolean;
 }
 
 export interface HeroSlideData {
@@ -65,6 +75,7 @@ export interface HeroSlideData {
   type: 'hero';
   headline: string;
   customerLogos: string[];
+  hideLogo?: boolean;
 }
 
 export interface AgendaSlideData {
@@ -72,6 +83,7 @@ export interface AgendaSlideData {
   type: 'agenda';
   title: string;
   items: string[];
+  hideLogo?: boolean;
 }
 
 export interface QuoteSlideData {
@@ -79,6 +91,11 @@ export interface QuoteSlideData {
   type: 'quote';
   quote: string;
   attribution: string;
+  hideLogo?: boolean;
+  imageUrl?: string;
+  imageX?: number;
+  imageY?: number;
+  imageZoom?: number;
 }
 
 export interface ThreeColItem {
@@ -92,6 +109,7 @@ export interface ThreeColSlideData {
   type: 'three-col';
   headline: string;
   columns: ThreeColItem[];
+  hideLogo?: boolean;
 }
 
 export interface FeatureListItem {
@@ -105,6 +123,7 @@ export interface FeatureListSlideData {
   type: 'feature-list';
   headline: string;
   items: FeatureListItem[];
+  hideLogo?: boolean;
 }
 
 export interface CustomerMetric {
@@ -120,6 +139,7 @@ export interface CustomerStorySlideData {
   body: string;
   attribution: string;
   metrics: CustomerMetric[];
+  hideLogo?: boolean;
 }
 
 export interface ChecklistItem {
@@ -133,6 +153,65 @@ export interface ChecklistSlideData {
   type: 'checklist';
   headline: string;
   items: ChecklistItem[];
+  hideLogo?: boolean;
+}
+
+// ── New slide types ──────────────────────────────────────────────────────────
+
+export interface BigQuoteSlideData {
+  id: string;
+  type: 'big-quote';
+  quote: string;
+  attribution: string;
+  role?: string;
+  imageUrl?: string;
+  imageX?: number;
+  imageY?: number;
+  imageZoom?: number;
+  hideLogo?: boolean;
+}
+
+export interface TwoColMediaSlideData {
+  id: string;
+  type: 'two-col-media';
+  eyebrow?: string;
+  headline: string;
+  body: string;
+  imageUrl?: string;
+  imageX?: number;
+  imageY?: number;
+  imageZoom?: number;
+  hideLogo?: boolean;
+}
+
+export interface ContactCard {
+  name: string;
+  role: string;
+  linkedin?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface ContactSlideData {
+  id: string;
+  type: 'contact';
+  headline: string;
+  cards: ContactCard[];
+  hideLogo?: boolean;
+}
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  imageUrl?: string;
+}
+
+export interface TeamSlideData {
+  id: string;
+  type: 'team';
+  headline?: string;
+  members: TeamMember[];
+  hideLogo?: boolean;
 }
 
 export type SlideData =
@@ -148,7 +227,11 @@ export type SlideData =
   | ThreeColSlideData
   | FeatureListSlideData
   | CustomerStorySlideData
-  | ChecklistSlideData;
+  | ChecklistSlideData
+  | BigQuoteSlideData
+  | TwoColMediaSlideData
+  | ContactSlideData
+  | TeamSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -396,6 +479,40 @@ export const defaultSlideByType: Record<string, SlideData> = {
       { title: 'Item one', body: 'Description of this item.', checked: false },
       { title: 'Item two', body: 'Description of this item.', checked: false },
       { title: 'Item three', body: 'Description of this item.', checked: false },
+    ],
+  },
+  'big-quote': {
+    id: 'new',
+    type: 'big-quote',
+    quote: 'Your most impactful customer quote goes here. Make it bold and specific.',
+    attribution: 'Name, Title',
+    role: 'Company Name',
+  },
+  'two-col-media': {
+    id: 'new',
+    type: 'two-col-media',
+    eyebrow: 'Key Insight',
+    headline: 'A bold headline that sets up the visual.',
+    body: 'Supporting paragraph that adds context and depth to the visual on the right.',
+  },
+  contact: {
+    id: 'new',
+    type: 'contact',
+    headline: 'Connect with us',
+    cards: [
+      { name: 'Your Name', role: 'Title, AirOps', linkedin: 'linkedin.com/in/yourname', email: 'name@airops.com' },
+      { name: 'Your Name', role: 'Title, AirOps', linkedin: 'linkedin.com/in/yourname', email: 'name@airops.com' },
+    ],
+  },
+  team: {
+    id: 'new',
+    type: 'team',
+    headline: 'Meet the team',
+    members: [
+      { name: 'Team Member', role: 'Role, Title' },
+      { name: 'Team Member', role: 'Role, Title' },
+      { name: 'Team Member', role: 'Role, Title' },
+      { name: 'Team Member', role: 'Role, Title' },
     ],
   },
 };
