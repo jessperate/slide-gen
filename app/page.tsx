@@ -17,6 +17,17 @@ const SAVED_KEY = 'slidegen-saved-deck';
 const NOTES_KEY = 'slidegen-notes';
 const THEME_KEY = 'slidegen-theme';
 const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
+const VIEWER_NAME_KEY = 'slidegen-viewer-name';
+
+interface SlideComment {
+  id: string;
+  slideId: string;
+  x: number; // % of slide width
+  y: number; // % of slide height
+  text: string;
+  author: string;
+  createdAt: string;
+}
 
 export default function SlideGenPage() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -37,6 +48,14 @@ export default function SlideGenPage() {
   const [colorMode, setColorMode] = useState<ColorMode>('green');
   const [slideColorOverrides, setSlideColorOverrides] = useState<Record<string, ColorMode>>({});
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const [comments, setComments] = useState<SlideComment[]>([]);
+  const [viewerName, setViewerName] = useState('');
+  const [commentMode, setCommentMode] = useState(false);
+  const [pendingCommentPos, setPendingCommentPos] = useState<{ x: number; y: number } | null>(null);
+  const [commentInput, setCommentInput] = useState('');
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [nameInputValue, setNameInputValue] = useState('');
+  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -61,6 +80,8 @@ export default function SlideGenPage() {
       if (savedTheme && THEMES[savedTheme]) setColorMode(savedTheme);
       const savedSlideColors = localStorage.getItem(SLIDE_COLORS_KEY);
       if (savedSlideColors) setSlideColorOverrides(JSON.parse(savedSlideColors));
+      const savedName = localStorage.getItem(VIEWER_NAME_KEY) ?? '';
+      if (savedName) setViewerName(savedName);
     } catch {}
   }, []);
 
@@ -78,6 +99,7 @@ export default function SlideGenPage() {
       }
       if (state.colorMode && THEMES[state.colorMode as ColorMode]) setColorMode(state.colorMode);
       if (state.slideColorOverrides) setSlideColorOverrides(state.slideColorOverrides);
+      if (Array.isArray(state.comments)) setComments(state.comments);
     } catch { /* ignore malformed hash */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -223,6 +245,34 @@ export default function SlideGenPage() {
     } finally {
       setExportProgress(null);
     }
+  };
+
+  const activeSlideComments = comments.filter((c) => c.slideId === activeSlide?.id);
+
+  const submitComment = () => {
+    if (!pendingCommentPos || !commentInput.trim() || !viewerName || !activeSlide) return;
+    const newComment: SlideComment = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      slideId: activeSlide.id,
+      x: pendingCommentPos.x,
+      y: pendingCommentPos.y,
+      text: commentInput.trim(),
+      author: viewerName,
+      createdAt: new Date().toISOString(),
+    };
+    setComments((prev) => [...prev, newComment]);
+    setPendingCommentPos(null);
+    setCommentInput('');
+  };
+
+  const confirmName = () => {
+    const name = nameInputValue.trim();
+    if (!name) return;
+    setViewerName(name);
+    try { localStorage.setItem(VIEWER_NAME_KEY, name); } catch {}
+    setShowNamePrompt(false);
+    setNameInputValue('');
+    // pendingCommentPos is already set, input will appear
   };
 
   const theme = THEMES[colorMode] ?? DEFAULT_THEME;
@@ -469,6 +519,7 @@ export default function SlideGenPage() {
             height: 52,
             gap: 12,
             flexShrink: 0,
+            overflowX: 'auto',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
@@ -511,6 +562,27 @@ export default function SlideGenPage() {
 
           <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
 
+          {/* Comment toggle — right after Present so it's always visible */}
+          <button
+            onClick={() => {
+              const next = !commentMode;
+              setCommentMode(next);
+              if (!next) { setPendingCommentPos(null); setCommentInput(''); }
+            }}
+            style={{
+              background: commentMode ? '#002910' : 'transparent',
+              border: `1px solid ${commentMode ? '#00ff64' : '#2a2a2a'}`,
+              color: commentMode ? '#00ff64' : 'rgba(255,255,255,0.5)',
+              fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', padding: '5px 12px',
+              transition: 'all 0.2s', whiteSpace: 'nowrap',
+            }}
+          >
+            {commentMode ? '● ' : ''}Comment{comments.length > 0 ? ` (${comments.length})` : ''}
+          </button>
+
+          <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
+
           {hasSavedDeck && (
             <button
               onClick={handleRestoreSaved}
@@ -524,7 +596,7 @@ export default function SlideGenPage() {
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'; }}
             >
-              ↩ Previous
+              ↩ Prev
             </button>
           )}
 
@@ -534,12 +606,12 @@ export default function SlideGenPage() {
               background: 'transparent', border: '1px solid #2a2a2a',
               color: 'rgba(255,255,255,0.5)', fontFamily: '"Saans", sans-serif',
               fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '5px 12px',
-              transition: 'border-color 0.15s, color 0.15s',
+              transition: 'border-color 0.15s, color 0.15s', whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.5)'; }}
           >
-            ✦ New deck
+            ✦ New
           </button>
 
           <button
@@ -549,7 +621,7 @@ export default function SlideGenPage() {
               color: '#F8FFFA', fontFamily: '"Saans", sans-serif',
               fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '5px 12px',
               display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'border-color 0.15s, color 0.15s',
+              transition: 'border-color 0.15s, color 0.15s', whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = '#F8FFFA'; }}
@@ -570,12 +642,12 @@ export default function SlideGenPage() {
             onMouseEnter={(e) => { if (!exportProgress) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; } }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = exportProgress ? 'rgba(255,255,255,0.3)' : '#F8FFFA'; }}
           >
-            {exportProgress ? `Exporting ${exportProgress.current}/${exportProgress.total}…` : '↗ Google Slides'}
+            {exportProgress ? `Exporting…` : 'GSlides'}
           </button>
 
           <button
             onClick={() => {
-              const state = { slides, colorMode, slideColorOverrides };
+              const state = { slides, colorMode, slideColorOverrides, comments };
               const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
               const url = `${window.location.origin}${window.location.pathname}#s=${compressed}`;
               window.history.replaceState(null, '', `#s=${compressed}`);
@@ -595,7 +667,7 @@ export default function SlideGenPage() {
             onMouseEnter={(e) => { if (shareStatus === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64'; (e.currentTarget as HTMLButtonElement).style.color = '#00ff64'; } }}
             onMouseLeave={(e) => { if (shareStatus === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = '#F8FFFA'; } }}
           >
-            {shareStatus === 'copied' ? '✓ Link copied!' : '↗ Share'}
+            {shareStatus === 'copied' ? '✓ Copied!' : '↗ Share'}
           </button>
 
           <button
@@ -660,19 +732,155 @@ export default function SlideGenPage() {
           style={{
             gridArea: 'canvas', display: 'flex', alignItems: 'center',
             justifyContent: 'center', background: '#1a1a1a', overflow: 'hidden', position: 'relative',
+            cursor: commentMode ? 'crosshair' : 'default',
           }}
         >
           {activeSlide && (
             <div style={{ width: slideWidth, height: slideHeight, position: 'relative', flexShrink: 0, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+              {/* Slide content */}
               <div style={{ transformOrigin: 'top left', transform: `scale(${canvasScale})`, width: 1280, height: 720, position: 'absolute', top: 0, left: 0 }}>
-                {renderSlide(activeSlide, true, updateActiveSlide, activeSlideTheme)}
+                {renderSlide(activeSlide, !commentMode, updateActiveSlide, activeSlideTheme)}
                 <LogoLayer
                   logos={(activeSlide as { logos?: LogoOverlay[] }).logos ?? []}
                   scale={canvasScale}
-                  interactive={true}
+                  interactive={!commentMode}
                   onUpdate={(logos) => updateActiveSlide({ logos } as Partial<typeof activeSlide>)}
                 />
               </div>
+
+              {/* Comment bubbles (in outer div, so they don't scale) */}
+              {activeSlideComments.map((comment, idx) => (
+                <div
+                  key={comment.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${comment.x}%`,
+                    top: `${comment.y}%`,
+                    transform: 'translate(-50%, -100%)',
+                    zIndex: 15,
+                    pointerEvents: 'auto',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={() => setHoveredCommentId(comment.id)}
+                  onMouseLeave={() => setHoveredCommentId(null)}
+                >
+                  <div style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50% 50% 50% 0',
+                    background: hoveredCommentId === comment.id ? '#ffffff' : '#00ff64',
+                    color: '#002910',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: '"Saans Mono", monospace',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    transform: 'rotate(-45deg)',
+                    transition: 'background 0.15s',
+                  }}>
+                    <span style={{ transform: 'rotate(45deg)', display: 'block' }}>{idx + 1}</span>
+                  </div>
+                  {/* Hover tooltip */}
+                  {hoveredCommentId === comment.id && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '110%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#111',
+                      border: '1px solid #2a2a2a',
+                      padding: '8px 10px',
+                      width: 180,
+                      zIndex: 30,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+                      pointerEvents: 'none',
+                    }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#00ff64', fontFamily: '"Saans", sans-serif', marginBottom: 4 }}>{comment.author}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: '"Saans", sans-serif', lineHeight: 1.4 }}>{comment.text}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Comment mode click overlay */}
+              {commentMode && (
+                <div
+                  style={{ position: 'absolute', inset: 0, cursor: 'crosshair', zIndex: 10 }}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    if (!viewerName) {
+                      setPendingCommentPos({ x, y });
+                      setShowNamePrompt(true);
+                    } else {
+                      setPendingCommentPos({ x, y });
+                      setCommentInput('');
+                    }
+                  }}
+                />
+              )}
+
+              {/* Pending comment input popup */}
+              {pendingCommentPos && !showNamePrompt && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: Math.min(pendingCommentPos.x / 100 * slideWidth, slideWidth - 220),
+                    top: Math.min(pendingCommentPos.y / 100 * slideHeight + 8, slideHeight - 140),
+                    zIndex: 25,
+                    background: '#111111',
+                    border: '1px solid #2a2a2a',
+                    padding: '10px',
+                    width: 210,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <textarea
+                    autoFocus
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); }
+                      if (e.key === 'Escape') { setPendingCommentPos(null); setCommentInput(''); }
+                    }}
+                    placeholder="Add a comment…"
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      background: '#1a1a1a',
+                      border: '1px solid #2a2a2a',
+                      color: '#F8FFFA',
+                      fontFamily: '"Saans", sans-serif',
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      padding: '6px 8px',
+                      resize: 'none',
+                      outline: 'none',
+                      caretColor: '#00ff64',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 6 }}>
+                    <button
+                      onClick={() => { setPendingCommentPos(null); setCommentInput(''); }}
+                      style={{ background: 'transparent', border: '1px solid #2a2a2a', color: 'rgba(255,255,255,0.4)', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '3px 10px' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={submitComment}
+                      disabled={!commentInput.trim()}
+                      style={{ background: commentInput.trim() ? '#008c44' : '#1a1a1a', border: '1px solid #2a2a2a', color: commentInput.trim() ? '#fff' : 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: commentInput.trim() ? 'pointer' : 'default', padding: '3px 10px' }}
+                    >
+                      Post
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -756,24 +964,127 @@ export default function SlideGenPage() {
           )}
         </div>
 
-        {/* Edit panel */}
+        {/* Right panel — edit or comments */}
         <div style={{ gridArea: 'panel', overflow: 'hidden' }}>
-          {activeSlide && (
-            <EditPanel
-              slide={activeSlide}
-              onChange={updateSlide}
-              colorMode={colorMode}
-              onColorModeChange={setColorMode}
-              slideColorMode={slideColorOverrides[activeSlide.id]}
-              onSlideColorModeChange={(mode) => {
-                setSlideColorOverrides((prev) => {
-                  const next = { ...prev };
-                  if (mode === undefined) delete next[activeSlide.id];
-                  else next[activeSlide.id] = mode;
-                  return next;
-                });
-              }}
-            />
+          {commentMode ? (
+            /* Comments panel */
+            <div style={{ height: '100%', background: '#0f0f0f', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #2a2a2a' }}>
+              {/* Header */}
+              <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                    Comments
+                  </div>
+                  {comments.length > 0 && (
+                    <button
+                      onClick={() => setComments([])}
+                      style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
+                      title="Clear all comments"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff64', flexShrink: 0 }} />
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: '"Saans", sans-serif' }}>
+                    {viewerName ? (
+                      <>Viewing as <span style={{ color: '#00ff64' }}>{viewerName}</span></>
+                    ) : 'Click slide to comment'}
+                  </div>
+                  {viewerName && (
+                    <button
+                      onClick={() => { setNameInputValue(viewerName); setShowNamePrompt(true); }}
+                      style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', fontSize: 10, cursor: 'pointer', padding: '1px 4px' }}
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Comment list */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {comments.length === 0 ? (
+                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, fontFamily: '"Saans", sans-serif', textAlign: 'center', paddingTop: 40, lineHeight: 1.6 }}>
+                    Click anywhere on the slide to pin a comment
+                  </div>
+                ) : (
+                  comments.map((comment, idx) => {
+                    const slideIdx = slides.findIndex((s) => s.id === comment.slideId);
+                    const isCurrentSlide = comment.slideId === activeSlide?.id;
+                    return (
+                      <div
+                        key={comment.id}
+                        style={{
+                          padding: '10px 10px 8px',
+                          background: isCurrentSlide ? '#1a1a1a' : '#141414',
+                          border: `1px solid ${isCurrentSlide ? '#2a2a2a' : '#1e1e1e'}`,
+                          position: 'relative',
+                          cursor: isCurrentSlide ? 'default' : 'pointer',
+                          opacity: isCurrentSlide ? 1 : 0.6,
+                        }}
+                        onClick={() => !isCurrentSlide && setActiveIndex(slideIdx)}
+                      >
+                        <div style={{ display: 'flex', gap: 7, alignItems: 'flex-start', marginBottom: 5 }}>
+                          {/* Comment pin badge */}
+                          <div style={{
+                            width: 16, height: 16, borderRadius: '50% 50% 50% 0',
+                            background: '#00ff64', color: '#002910', fontSize: 8, fontWeight: 700,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontFamily: '"Saans Mono", monospace', transform: 'rotate(-45deg)',
+                            flexShrink: 0, marginTop: 1,
+                          }}>
+                            <span style={{ transform: 'rotate(45deg)', display: 'block' }}>{idx + 1}</span>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: '"Saans", sans-serif' }}>{comment.author}</span>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans Mono", monospace', marginLeft: 6 }}>
+                              Slide {slideIdx + 1}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: '"Saans", sans-serif', lineHeight: 1.5, paddingLeft: 23 }}>
+                          {comment.text}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setComments((prev) => prev.filter((c) => c.id !== comment.id)); }}
+                          style={{ position: 'absolute', top: 7, right: 7, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 11, padding: '2px 4px', lineHeight: 1 }}
+                          title="Delete"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer hint */}
+              <div style={{ padding: '10px 14px', borderTop: '1px solid #2a2a2a', flexShrink: 0 }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', textAlign: 'center' }}>
+                  Click slide to pin · Share link to share comments
+                </div>
+              </div>
+            </div>
+          ) : (
+            activeSlide && (
+              <EditPanel
+                slide={activeSlide}
+                onChange={updateSlide}
+                colorMode={colorMode}
+                onColorModeChange={setColorMode}
+                slideColorMode={slideColorOverrides[activeSlide.id]}
+                onSlideColorModeChange={(mode) => {
+                  setSlideColorOverrides((prev) => {
+                    const next = { ...prev };
+                    if (mode === undefined) delete next[activeSlide.id];
+                    else next[activeSlide.id] = mode;
+                    return next;
+                  });
+                }}
+              />
+            )
           )}
         </div>
 
@@ -832,6 +1143,60 @@ export default function SlideGenPage() {
       </div>
 
       {showAddModal && <AddSlideModal onAdd={addSlide} onClose={() => setShowAddModal(false)} />}
+
+      {/* Viewer name prompt */}
+      {showNamePrompt && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, fontFamily: '"Saans", sans-serif' }}
+          onClick={() => { setShowNamePrompt(false); setPendingCommentPos(null); }}
+        >
+          <div
+            style={{ background: '#111111', border: '1px solid #2a2a2a', padding: 32, width: 340, maxWidth: '90vw' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: '"Serrif VF", serif', fontSize: 22, color: '#ffffff', marginBottom: 6, fontWeight: 400 }}>
+              Who&apos;s commenting?
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 20 }}>
+              Your name will appear on comments you leave.
+            </div>
+            <input
+              autoFocus
+              value={nameInputValue}
+              onChange={(e) => setNameInputValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmName(); if (e.key === 'Escape') { setShowNamePrompt(false); setPendingCommentPos(null); } }}
+              placeholder="Your name"
+              style={{
+                width: '100%',
+                background: '#1a1a1a',
+                border: '1px solid #2a2a2a',
+                color: '#F8FFFA',
+                fontFamily: '"Saans", sans-serif',
+                fontSize: 14,
+                padding: '10px 12px',
+                outline: 'none',
+                caretColor: '#00ff64',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => { setShowNamePrompt(false); setPendingCommentPos(null); setNameInputValue(''); }}
+                style={{ background: 'transparent', border: '1px solid #2a2a2a', color: 'rgba(255,255,255,0.4)', fontFamily: '"Saans", sans-serif', fontSize: 13, cursor: 'pointer', padding: '7px 16px' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmName}
+                disabled={!nameInputValue.trim()}
+                style={{ background: nameInputValue.trim() ? '#008c44' : '#1a1a1a', border: '1px solid #2a2a2a', color: nameInputValue.trim() ? '#fff' : 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', fontSize: 13, fontWeight: 500, cursor: nameInputValue.trim() ? 'pointer' : 'default', padding: '7px 16px' }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Google setup modal */}
       {googleSetupNeeded && (
