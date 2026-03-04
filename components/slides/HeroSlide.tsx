@@ -57,47 +57,90 @@ export default function HeroSlide({ data, interactive = true, onUpdate }: Props)
           whiteSpace: 'pre-line',
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
-          borderRadius: 2,
         }}
       >
         {data.headline}
+      </div>
+
+      {/* Trusted by label */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 176,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontFamily: '"Saans Mono", monospace',
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.3)',
+        }}
+      >
+        Trusted by
       </div>
 
       {/* Customer logos row */}
       <div
         style={{
           position: 'absolute',
-          bottom: 140,
+          bottom: 96,
           left: 0,
           right: 0,
           display: 'flex',
           justifyContent: 'center',
-          gap: 32,
+          gap: 48,
           alignItems: 'center',
         }}
       >
-        {data.customerLogos.map((logo, i) => (
+        {data.customerLogos.map((domain, i) => (
           <div
             key={i}
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => {
-              const next = [...data.customerLogos];
-              next[i] = e.currentTarget.textContent ?? '';
-              onUpdate?.({ ...data, customerLogos: next });
-            }}
             style={{
-              fontFamily: '"Saans", sans-serif',
-              fontSize: 14,
-              color: '#ffffff',
-              opacity: 0.7,
-              letterSpacing: '0.02em',
-              outline: 'none',
-              cursor: onUpdate ? 'text' : 'default',
-              borderRadius: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            {logo}
+            <img
+              src={`https://cdn.brandfetch.io/${domain}/w/200/h/60`}
+              alt={domain}
+              style={{
+                height: 28,
+                width: 'auto',
+                maxWidth: 120,
+                objectFit: 'contain',
+                filter: 'brightness(0) invert(1)',
+                opacity: 0.65,
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            {onUpdate && (
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={(e) => {
+                  const next = [...data.customerLogos];
+                  next[i] = e.currentTarget.textContent ?? '';
+                  onUpdate?.({ ...data, customerLogos: next });
+                }}
+                style={{
+                  fontFamily: '"Saans Mono", monospace',
+                  fontSize: 9,
+                  color: 'rgba(255,255,255,0.25)',
+                  letterSpacing: '0.06em',
+                  outline: 'none',
+                  cursor: 'text',
+                  textAlign: 'center',
+                }}
+              >
+                {domain}
+              </div>
+            )}
           </div>
         ))}
       </div>

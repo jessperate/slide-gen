@@ -224,7 +224,7 @@ export const defaultSlides: SlideData[] = [
     id: '7',
     type: 'hero',
     headline: 'Craft is the Only\nDurable Strategy',
-    customerLogos: ['Kayak', 'Checkr', 'HubSpot', 'Notion', 'Ramp', 'Webflow'],
+    customerLogos: ['kayak.com', 'checkr.com', 'hubspot.com', 'notion.so', 'ramp.com', 'webflow.com'],
   },
   {
     id: '8',
@@ -342,7 +342,7 @@ export const defaultSlideByType: Record<string, SlideData> = {
     id: 'new',
     type: 'hero',
     headline: 'Your Headline\nGoes Here',
-    customerLogos: ['Company A', 'Company B', 'Company C'],
+    customerLogos: ['hubspot.com', 'notion.so', 'webflow.com'],
   },
   agenda: {
     id: 'new',
