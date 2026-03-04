@@ -206,38 +206,48 @@ export function LogoLayer({
   interactive: boolean;
   onUpdate?: (logos: LogoOverlay[]) => void;
 }) {
+  const [localLogos, setLocalLogos] = useState(logos);
   const localLogosRef = useRef(logos);
-  const [displayLogos, setDisplayLogos] = useState(logos);
+  const isDragging = useRef(false);
+  const onUpdateRef = useRef(onUpdate);
 
+  useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
+
+  // Sync from parent only when not actively dragging
   useEffect(() => {
-    localLogosRef.current = logos;
-    setDisplayLogos(logos);
+    if (!isDragging.current) {
+      localLogosRef.current = logos;
+      setLocalLogos(logos);
+    }
   }, [logos]);
 
   const handleMouseDown = (e: React.MouseEvent, logo: LogoOverlay) => {
-    if (!interactive || !onUpdate) return;
+    if (!interactive || !onUpdateRef.current) return;
     e.preventDefault();
-    e.stopPropagation();
 
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startLogoX = logo.x;
-    const startLogoY = logo.y;
+    isDragging.current = true;
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startX = logo.x;
+    const startY = logo.y;
+    const id = logo.id;
+    const capturedScale = scale;
 
     const handleMouseMove = (me: MouseEvent) => {
-      const dx = (me.clientX - startX) / scale;
-      const dy = (me.clientY - startY) / scale;
-      const newX = Math.max(0, Math.min(100, startLogoX + (dx / 1280) * 100));
-      const newY = Math.max(0, Math.min(100, startLogoY + (dy / 720) * 100));
+      const dx = (me.clientX - startClientX) / capturedScale;
+      const dy = (me.clientY - startClientY) / capturedScale;
+      const newX = Math.max(0, Math.min(100, startX + (dx / 1280) * 100));
+      const newY = Math.max(0, Math.min(100, startY + (dy / 720) * 100));
       const updated = localLogosRef.current.map((l) =>
-        l.id === logo.id ? { ...l, x: newX, y: newY } : l
+        l.id === id ? { ...l, x: newX, y: newY } : l
       );
       localLogosRef.current = updated;
-      setDisplayLogos([...updated]);
+      setLocalLogos([...updated]);
     };
 
     const handleMouseUp = () => {
-      onUpdate(localLogosRef.current);
+      isDragging.current = false;
+      onUpdateRef.current?.(localLogosRef.current);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -246,7 +256,7 @@ export function LogoLayer({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  if (displayLogos.length === 0) return null;
+  if (localLogos.length === 0) return null;
 
   return (
     <div
@@ -257,7 +267,7 @@ export function LogoLayer({
         pointerEvents: interactive ? 'auto' : 'none',
       }}
     >
-      {displayLogos.map((logo) => (
+      {localLogos.map((logo) => (
         <div
           key={logo.id}
           onMouseDown={(e) => handleMouseDown(e, logo)}
@@ -275,7 +285,7 @@ export function LogoLayer({
             src={`https://cdn.brandfetch.io/${logo.domain}/w/400/h/120`}
             alt={logo.domain}
             draggable={false}
-            style={{ width: logo.width, height: 'auto', display: 'block' }}
+            style={{ width: logo.width, height: 'auto', display: 'block', pointerEvents: 'none' }}
           />
         </div>
       ))}
