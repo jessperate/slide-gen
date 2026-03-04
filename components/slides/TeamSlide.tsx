@@ -33,9 +33,22 @@ function MemberAvatar({
     e.target.value = '';
     setLoading(true);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      onUpload?.(ev.target?.result as string);
-      setLoading(false);
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      // Show original immediately while stipple processes
+      onUpload?.(dataUrl);
+      try {
+        const res = await fetch('/api/stipple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+        });
+        const data = await res.json();
+        if (res.ok) onUpload?.(`data:${data.mimeType};base64,${data.imageBase64}`);
+      } catch { /* keep original if stipple fails */ } finally {
+        setLoading(false);
+      }
     };
     reader.onerror = () => setLoading(false);
     reader.readAsDataURL(file);

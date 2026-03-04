@@ -130,7 +130,6 @@ function MemberImageUpload({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [rawBase64, setRawBase64] = useState<{ data: string; mime: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,34 +138,28 @@ function MemberImageUpload({
     e.target.value = '';
     setError('');
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string;
       const base64 = dataUrl.split(',')[1];
-      setRawBase64({ data: base64, mime: file.type });
+      // Show original immediately, then replace with stipple result
       onUpdate(dataUrl);
+      setLoading(true);
+      try {
+        const res = await fetch('/api/stipple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? 'Failed');
+        onUpdate(`data:${data.mimeType};base64,${data.imageBase64}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Stipple failed — original kept');
+      } finally {
+        setLoading(false);
+      }
     };
     reader.readAsDataURL(file);
-  };
-
-  const applyStipple = async () => {
-    if (!rawBase64) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/stipple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: rawBase64.data, mimeType: rawBase64.mime }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed');
-      onUpdate(`data:${data.mimeType};base64,${data.imageBase64}`);
-      setRawBase64(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to apply stipple');
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -180,7 +173,7 @@ function MemberImageUpload({
             style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block', border: '1px solid #2a2a2a', filter: 'grayscale(100%)' }}
           />
           <button
-            onClick={() => { onUpdate(undefined); setRawBase64(null); setError(''); }}
+            onClick={() => { onUpdate(undefined); setError(''); }}
             style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 11, cursor: 'pointer', padding: '2px 6px' }}
           >
             ✕
@@ -201,33 +194,13 @@ function MemberImageUpload({
           padding: '10px',
           textAlign: 'center',
           transition: 'border-color 0.15s, color 0.15s',
-          marginBottom: rawBase64 ? 6 : 0,
+          marginBottom: 0,
         }}
         onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; }}
         onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
       >
-        ↑ Upload photo
+        {loading ? '✦ Applying stipple…' : '↑ Upload photo'}
       </button>
-      {rawBase64 && (
-        <button
-          onClick={applyStipple}
-          disabled={loading}
-          style={{
-            width: '100%',
-            background: loading ? '#1a1a1a' : '#002910',
-            border: '1px solid #008c44',
-            color: loading ? 'rgba(0,255,100,0.5)' : '#00ff64',
-            fontFamily: '"Saans", sans-serif',
-            fontSize: 12,
-            cursor: loading ? 'default' : 'pointer',
-            padding: '8px 10px',
-            textAlign: 'center',
-            transition: 'background 0.15s',
-          }}
-        >
-          {loading ? '✦ Applying…' : '✦ Apply stipple effect'}
-        </button>
-      )}
       {error && <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464', marginTop: 6 }}>{error}</div>}
     </div>
   );
