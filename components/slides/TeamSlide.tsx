@@ -27,28 +27,18 @@ function MemberAvatar({
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
     setLoading(true);
-    try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve((ev.target?.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const res = await fetch('/api/stipple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
-      });
-      const data = await res.json();
-      if (res.ok) onUpload?.(`data:${data.mimeType};base64,${data.imageBase64}`);
-    } catch { /* silent */ } finally {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onUpload?.(ev.target?.result as string);
       setLoading(false);
-    }
+    };
+    reader.onerror = () => setLoading(false);
+    reader.readAsDataURL(file);
   };
 
   return (
