@@ -2,10 +2,12 @@ import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 
 const STIPPLE_PROMPT =
-  'Transform this portrait photo into a black-and-white stipple illustration. ' +
-  'Use varying dot sizes and densities to create depth, shading, and texture in the style of editorial engraving. ' +
-  'The background should be clean white. Keep the person clearly recognizable. ' +
-  'Output only the stipple illustration — no text, no borders, no extra elements.';
+  'Transform this portrait photo into a fine stipple illustration using only tiny dots. ' +
+  'Use a single dark forest-green ink color (#1a3a2a) on a pure white background. ' +
+  'The dots should be very small and densely packed — pack them tightly in shadow areas, sparse in highlights, with no dots at all in the brightest highlights. ' +
+  'Do not use lines, hatching, or crosshatching — only stipple dots. ' +
+  'Preserve the likeness and facial features accurately. The result should look like a high-quality editorial stipple portrait engraving. ' +
+  'Output only the stipple illustration — no text, no borders, no circular crop, no extra elements.';
 
 export async function POST(request: Request) {
   try {
