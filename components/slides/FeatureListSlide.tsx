@@ -17,7 +17,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
       style={{
         width: 1280,
         height: 720,
-        background: '#ffffff',
+        background: '#EEF5F1',
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -25,7 +25,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
       }}
     >
       {/* AirOps logo bottom-right */}
-      <div style={{ position: 'absolute', bottom: 36, right: 64 }}>
+      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
         <AirOpsLogo color="#001408" width={80} />
       </div>
 
@@ -41,13 +41,14 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
           position: 'absolute',
           top: 48,
           left: 64,
-          fontFamily: '"Saans", sans-serif',
-          fontSize: 32,
-          fontWeight: 700,
+          fontFamily: '"Serrif VF", serif',
+          fontSize: 44,
+          fontWeight: 400,
           color: '#000d05',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
-          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -57,7 +58,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate }:
       <div
         style={{
           position: 'absolute',
-          top: 130,
+          top: 144,
           left: 64,
           right: 64,
         }}

@@ -15,7 +15,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate }: Props
       style={{
         width: 1280,
         height: 720,
-        background: '#ffffff',
+        background: '#EEF5F1',
         position: 'relative',
         overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
@@ -23,7 +23,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate }: Props
       }}
     >
       {/* AirOps logo bottom-right */}
-      <div style={{ position: 'absolute', bottom: 36, right: 64 }}>
+      <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
         <AirOpsLogo color="#001408" width={80} />
       </div>
 
