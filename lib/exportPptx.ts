@@ -9,7 +9,7 @@ async function getPptxGenJs() {
 
 export async function exportToPptx(
   slides: SlideData[],
-  renderSlide: (data: SlideData, interactive: boolean) => React.ReactElement,
+  renderSlide: (data: SlideData, interactive: boolean) => React.ReactElement | null,
   onProgress?: (current: number, total: number) => void,
 ) {
   const { createRoot } = await import('react-dom/client');
@@ -39,7 +39,8 @@ export async function exportToPptx(
 
       // Render slide into hidden container
       await new Promise<void>((resolve) => {
-        root.render(renderSlide(slides[i], false) as React.ReactElement);
+        const el = renderSlide(slides[i], false);
+        if (el) root.render(el);
         // Give React + fonts time to paint
         setTimeout(resolve, 180);
       });
