@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: ThreeColSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<ThreeColSlideData>) => void;
 }
 
-export default function ThreeColSlide({ data, interactive = true }: Props) {
+export default function ThreeColSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -31,6 +32,9 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
 
       {/* Page headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -39,6 +43,9 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
           fontSize: 32,
           fontWeight: 700,
           color: '#000d05',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -82,12 +89,22 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
           >
             {/* Icon */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], icon: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 32,
                 color: '#008c44',
                 marginBottom: 8,
                 lineHeight: 1,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.icon}
@@ -95,6 +112,13 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
 
             {/* Column header */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], header: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
@@ -102,6 +126,9 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
                 color: '#000d05',
                 marginBottom: 8,
                 lineHeight: 1.3,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.header}
@@ -119,12 +146,22 @@ export default function ThreeColSlide({ data, interactive = true }: Props) {
 
             {/* Body */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
                 color: '#676c79',
                 lineHeight: 1.6,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.body}

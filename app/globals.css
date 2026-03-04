@@ -90,6 +90,16 @@ body {
   overflow: hidden;
 }
 
+/* Inline contentEditable editing styles */
+[contenteditable]:focus {
+  outline: 1.5px solid #008c44 !important;
+  background: rgba(0, 140, 68, 0.06) !important;
+  border-radius: 2px;
+}
+[contenteditable]:hover {
+  background: rgba(0, 140, 68, 0.04) !important;
+}
+
 /* Print styles */
 @media print {
   body {

@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: ContentSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<ContentSlideData>) => void;
 }
 
-export default function ContentSlide({ data, interactive = true }: Props) {
+export default function ContentSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -31,6 +32,9 @@ export default function ContentSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -41,6 +45,9 @@ export default function ContentSlide({ data, interactive = true }: Props) {
           color: '#000d05',
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -79,6 +86,13 @@ export default function ContentSlide({ data, interactive = true }: Props) {
             }}
           >
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], heading: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
@@ -86,17 +100,30 @@ export default function ContentSlide({ data, interactive = true }: Props) {
                 color: '#000d05',
                 marginBottom: 16,
                 lineHeight: 1.3,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.heading}
             </div>
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
                 color: '#676c79',
                 lineHeight: 1.6,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.body}

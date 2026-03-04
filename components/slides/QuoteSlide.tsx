@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: QuoteSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<QuoteSlideData>) => void;
 }
 
-export default function QuoteSlide({ data, interactive = true }: Props) {
+export default function QuoteSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -48,6 +49,9 @@ export default function QuoteSlide({ data, interactive = true }: Props) {
 
       {/* Quote text */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, quote: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 180,
@@ -59,6 +63,9 @@ export default function QuoteSlide({ data, interactive = true }: Props) {
           color: '#000d05',
           lineHeight: 1.4,
           letterSpacing: '-0.01em',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.quote}
@@ -66,6 +73,9 @@ export default function QuoteSlide({ data, interactive = true }: Props) {
 
       {/* Attribution */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, attribution: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 560,
@@ -74,6 +84,9 @@ export default function QuoteSlide({ data, interactive = true }: Props) {
           fontSize: 16,
           fontWeight: 700,
           color: '#000d05',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.attribution}

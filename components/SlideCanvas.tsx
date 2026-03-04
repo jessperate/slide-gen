@@ -21,42 +21,125 @@ interface Props {
   interactive?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  onUpdate?: (updates: Partial<SlideData>) => void;
 }
 
-export function renderSlide(slide: SlideData, interactive: boolean = true) {
+export function renderSlide(
+  slide: SlideData,
+  interactive: boolean = true,
+  onUpdate?: (updates: Partial<SlideData>) => void,
+) {
   switch (slide.type) {
     case 'cover':
-      return <CoverSlide data={slide} interactive={interactive} />;
+      return (
+        <CoverSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'section':
-      return <SectionSlide data={slide} interactive={interactive} />;
+      return (
+        <SectionSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'diagram':
-      return <DiagramSlide data={slide} interactive={interactive} />;
+      return (
+        <DiagramSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'stats':
-      return <StatsSlide data={slide} interactive={interactive} />;
+      return (
+        <StatsSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'content':
-      return <ContentSlide data={slide} interactive={interactive} />;
+      return (
+        <ContentSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'back-cover':
-      return <BackCoverSlide data={slide} interactive={interactive} />;
+      return (
+        <BackCoverSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'hero':
-      return <HeroSlide data={slide} interactive={interactive} />;
+      return (
+        <HeroSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'agenda':
-      return <AgendaSlide data={slide} interactive={interactive} />;
+      return (
+        <AgendaSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'quote':
-      return <QuoteSlide data={slide} interactive={interactive} />;
+      return (
+        <QuoteSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'three-col':
-      return <ThreeColSlide data={slide} interactive={interactive} />;
+      return (
+        <ThreeColSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'feature-list':
-      return <FeatureListSlide data={slide} interactive={interactive} />;
+      return (
+        <FeatureListSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'customer-story':
-      return <CustomerStorySlide data={slide} interactive={interactive} />;
+      return (
+        <CustomerStorySlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     case 'checklist':
-      return <ChecklistSlide data={slide} interactive={interactive} />;
+      return (
+        <ChecklistSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+        />
+      );
     default:
       return null;
   }
 }
 
-export default function SlideCanvas({ slide, interactive = true, className, style }: Props) {
+export default function SlideCanvas({ slide, interactive = true, className, style, onUpdate }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -103,7 +186,7 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
           flexShrink: 0,
         }}
       >
-        {renderSlide(slide, interactive)}
+        {renderSlide(slide, interactive, onUpdate)}
       </div>
     </div>
   );

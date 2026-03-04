@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: StatsSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<StatsSlideData>) => void;
 }
 
-export default function StatsSlide({ data, interactive = true }: Props) {
+export default function StatsSlide({ data, interactive = true, onUpdate }: Props) {
   const metricsCount = data.metrics.length;
   const totalWidth = 1232 - 48; // 1184px
   const metricWidth = (totalWidth - (metricsCount - 1) * 16) / metricsCount;
@@ -35,6 +36,9 @@ export default function StatsSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -45,6 +49,9 @@ export default function StatsSlide({ data, interactive = true }: Props) {
           color: '#000d05',
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -52,6 +59,9 @@ export default function StatsSlide({ data, interactive = true }: Props) {
 
       {/* Thesis box */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, thesis: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 140,
@@ -65,6 +75,9 @@ export default function StatsSlide({ data, interactive = true }: Props) {
           fontWeight: 700,
           color: '#000d05',
           lineHeight: 1.5,
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.thesis}
@@ -134,6 +147,13 @@ export default function StatsSlide({ data, interactive = true }: Props) {
             }}
           >
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.metrics];
+                next[i] = { ...next[i], value: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, metrics: next });
+              }}
               style={{
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 52,
@@ -141,11 +161,21 @@ export default function StatsSlide({ data, interactive = true }: Props) {
                 color: '#000d05',
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {metric.value}
             </div>
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.metrics];
+                next[i] = { ...next[i], label: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, metrics: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
@@ -153,6 +183,9 @@ export default function StatsSlide({ data, interactive = true }: Props) {
                 color: '#676c79',
                 textAlign: 'center',
                 lineHeight: 1.4,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {metric.label}

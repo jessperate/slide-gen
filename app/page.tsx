@@ -43,6 +43,14 @@ export default function SlideGenPage() {
     setSlides((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
 
+  const updateActiveSlide = (updates: Partial<SlideData>) => {
+    setSlides((prev) =>
+      prev.map((s, i) =>
+        i === activeIndex ? ({ ...s, ...updates } as SlideData) : s,
+      ),
+    );
+  };
+
   const addSlide = (newSlide: SlideData) => {
     setSlides((prev) => {
       const next = [...prev];
@@ -263,7 +271,7 @@ export default function SlideGenPage() {
                   left: 0,
                 }}
               >
-                {renderSlide(activeSlide, true)}
+                {renderSlide(activeSlide, true, updateActiveSlide)}
               </div>
             </div>
           )}

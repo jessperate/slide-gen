@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: HeroSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<HeroSlideData>) => void;
 }
 
-export default function HeroSlide({ data, interactive = true }: Props) {
+export default function HeroSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -37,6 +38,9 @@ export default function HeroSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: '50%',
@@ -51,6 +55,9 @@ export default function HeroSlide({ data, interactive = true }: Props) {
           letterSpacing: '-0.02em',
           lineHeight: 1,
           whiteSpace: 'pre-line',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -72,12 +79,22 @@ export default function HeroSlide({ data, interactive = true }: Props) {
         {data.customerLogos.map((logo, i) => (
           <div
             key={i}
+            contentEditable={!!onUpdate}
+            suppressContentEditableWarning
+            onBlur={(e) => {
+              const next = [...data.customerLogos];
+              next[i] = e.currentTarget.textContent ?? '';
+              onUpdate?.({ ...data, customerLogos: next });
+            }}
             style={{
               fontFamily: '"Saans", sans-serif',
               fontSize: 14,
               color: '#ffffff',
               opacity: 0.7,
               letterSpacing: '0.02em',
+              outline: 'none',
+              cursor: onUpdate ? 'text' : 'default',
+              borderRadius: 2,
             }}
           >
             {logo}

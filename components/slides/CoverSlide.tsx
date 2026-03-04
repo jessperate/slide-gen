@@ -5,9 +5,10 @@ import { CoverSlideData } from '@/lib/slides';
 interface Props {
   data: CoverSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<CoverSlideData>) => void;
 }
 
-export default function CoverSlide({ data, interactive = true }: Props) {
+export default function CoverSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -22,6 +23,9 @@ export default function CoverSlide({ data, interactive = true }: Props) {
     >
       {/* Eyebrow */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, eyebrow: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 80,
@@ -34,6 +38,9 @@ export default function CoverSlide({ data, interactive = true }: Props) {
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: 'white',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.eyebrow}
@@ -54,6 +61,9 @@ export default function CoverSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: '50%',
@@ -69,14 +79,20 @@ export default function CoverSlide({ data, interactive = true }: Props) {
           lineHeight: 1.1,
           whiteSpace: 'pre-line',
           padding: '0 120px',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
       </div>
 
       {/* Subheadline */}
-      {data.subheadline && (
+      {data.subheadline !== undefined && (
         <div
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, subheadline: e.currentTarget.textContent ?? '' })}
           style={{
             position: 'absolute',
             bottom: 80,
@@ -87,6 +103,9 @@ export default function CoverSlide({ data, interactive = true }: Props) {
             fontSize: 14,
             fontWeight: 400,
             color: 'rgba(255,255,255,0.5)',
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
           }}
         >
           {data.subheadline}

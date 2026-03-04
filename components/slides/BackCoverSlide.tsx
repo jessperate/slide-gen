@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: BackCoverSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<BackCoverSlideData>) => void;
 }
 
-export default function BackCoverSlide({ data, interactive = true }: Props) {
+export default function BackCoverSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -35,6 +36,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
 
       {/* CTA */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, cta: e.currentTarget.textContent ?? '' })}
         style={{
           fontFamily: '"Saans", sans-serif',
           fontSize: 18,
@@ -44,6 +48,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
           maxWidth: 640,
           lineHeight: 1.4,
           whiteSpace: 'pre-line',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.cta}
@@ -51,6 +58,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
 
       {/* URL bottom-center */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, url: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           bottom: 48,
@@ -63,6 +73,9 @@ export default function BackCoverSlide({ data, interactive = true }: Props) {
           letterSpacing: '0.08em',
           color: 'rgba(255,255,255,0.4)',
           textTransform: 'lowercase',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.url}

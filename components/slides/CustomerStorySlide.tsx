@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: CustomerStorySlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<CustomerStorySlideData>) => void;
 }
 
-export default function CustomerStorySlide({ data, interactive = true }: Props) {
+export default function CustomerStorySlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -31,6 +32,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
 
       {/* Customer label */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, customerName: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -41,6 +45,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
           color: '#008c44',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.customerName}
@@ -57,6 +64,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
       >
         {/* Headline */}
         <div
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 36,
@@ -65,6 +75,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
             lineHeight: 1.2,
             marginBottom: 24,
             letterSpacing: '-0.01em',
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
           }}
         >
           {data.headline}
@@ -72,6 +85,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
 
         {/* Body */}
         <div
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, body: e.currentTarget.textContent ?? '' })}
           style={{
             fontFamily: '"Saans", sans-serif',
             fontSize: 14,
@@ -79,6 +95,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
             color: '#676c79',
             lineHeight: 1.6,
             marginBottom: 32,
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
           }}
         >
           {data.body}
@@ -104,26 +123,21 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
           />
           <div>
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => onUpdate?.({ ...data, attribution: e.currentTarget.textContent ?? '' })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
                 fontWeight: 700,
                 color: '#000d05',
                 lineHeight: 1.3,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
-              {data.attribution.split(',')[0]?.trim()}
-            </div>
-            <div
-              style={{
-                fontFamily: '"Saans", sans-serif',
-                fontSize: 12,
-                fontWeight: 400,
-                color: '#676c79',
-                lineHeight: 1.3,
-              }}
-            >
-              {data.attribution.split(',').slice(1).join(',').trim()}
+              {data.attribution}
             </div>
           </div>
         </div>
@@ -151,6 +165,13 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
             }}
           >
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.metrics];
+                next[i] = { ...next[i], value: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, metrics: next });
+              }}
               style={{
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 48,
@@ -158,11 +179,21 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
                 color: '#000d05',
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {metric.value}
             </div>
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.metrics];
+                next[i] = { ...next[i], label: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, metrics: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 13,
@@ -170,6 +201,9 @@ export default function CustomerStorySlide({ data, interactive = true }: Props) 
                 color: '#676c79',
                 marginTop: 8,
                 lineHeight: 1.4,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {metric.label}

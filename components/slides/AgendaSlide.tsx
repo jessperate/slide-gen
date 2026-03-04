@@ -5,9 +5,10 @@ import { AgendaSlideData } from '@/lib/slides';
 interface Props {
   data: AgendaSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<AgendaSlideData>) => void;
 }
 
-export default function AgendaSlide({ data, interactive = true }: Props) {
+export default function AgendaSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -48,6 +49,9 @@ export default function AgendaSlide({ data, interactive = true }: Props) {
 
       {/* Title */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, title: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 72,
@@ -58,6 +62,9 @@ export default function AgendaSlide({ data, interactive = true }: Props) {
           color: '#ffffff',
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.title}
@@ -95,12 +102,22 @@ export default function AgendaSlide({ data, interactive = true }: Props) {
               {String(i + 1).padStart(2, '0')}
             </div>
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = e.currentTarget.textContent ?? '';
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
                 fontWeight: 400,
                 color: '#EEF5F1',
                 lineHeight: 1.4,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item}

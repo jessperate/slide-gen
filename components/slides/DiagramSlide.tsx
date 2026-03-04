@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: DiagramSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<DiagramSlideData>) => void;
 }
 
-export default function DiagramSlide({ data, interactive = true }: Props) {
+export default function DiagramSlide({ data, interactive = true, onUpdate }: Props) {
   const colCount = data.columns.length;
   const totalWidth = 1232 - 48; // 1184px
   const colWidth = totalWidth / colCount;
@@ -35,6 +36,9 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -45,6 +49,9 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
           color: '#000d05',
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -77,6 +84,13 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
           >
             {/* Column header */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], header: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
@@ -84,6 +98,9 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
                 color: '#676c79',
                 textAlign: 'center',
                 marginBottom: 20,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.header}
@@ -91,6 +108,13 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
 
             {/* Column body */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.columns];
+                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, columns: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
@@ -99,14 +123,24 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
                 lineHeight: 1.5,
                 textAlign: 'center',
                 maxWidth: colWidth - 48,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {col.body}
             </div>
 
             {/* Tag */}
-            {col.tag && (
+            {col.tag !== undefined && (
               <div
+                contentEditable={!!onUpdate}
+                suppressContentEditableWarning
+                onBlur={(e) => {
+                  const next = [...data.columns];
+                  next[i] = { ...next[i], tag: e.currentTarget.textContent ?? '' };
+                  onUpdate?.({ ...data, columns: next });
+                }}
                 style={{
                   marginTop: 24,
                   fontFamily: '"Saans Mono", monospace',
@@ -119,6 +153,8 @@ export default function DiagramSlide({ data, interactive = true }: Props) {
                   border: '1px solid #d4e8da',
                   padding: '4px 10px',
                   borderRadius: 0,
+                  outline: 'none',
+                  cursor: onUpdate ? 'text' : 'default',
                 }}
               >
                 {col.tag}

@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: FeatureListSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<FeatureListSlideData>) => void;
 }
 
-export default function FeatureListSlide({ data, interactive = true }: Props) {
+export default function FeatureListSlide({ data, interactive = true, onUpdate }: Props) {
   const items = data.items.slice(0, 5);
 
   return (
@@ -33,6 +34,9 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -41,6 +45,9 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
           fontSize: 32,
           fontWeight: 700,
           color: '#000d05',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -68,12 +75,22 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
           >
             {/* Icon */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = { ...next[i], icon: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontSize: 28,
                 color: '#008c44',
                 width: 40,
                 flexShrink: 0,
                 lineHeight: 1,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item.icon}
@@ -81,6 +98,13 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
 
             {/* Title */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = { ...next[i], title: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
@@ -90,6 +114,9 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
                 flexShrink: 0,
                 marginLeft: 16,
                 lineHeight: 1.3,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item.title}
@@ -97,6 +124,13 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
 
             {/* Body */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
@@ -105,6 +139,9 @@ export default function FeatureListSlide({ data, interactive = true }: Props) {
                 lineHeight: 1.5,
                 flex: 1,
                 marginLeft: 24,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item.body}

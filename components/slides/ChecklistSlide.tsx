@@ -6,9 +6,10 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 interface Props {
   data: ChecklistSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<ChecklistSlideData>) => void;
 }
 
-export default function ChecklistSlide({ data, interactive = true }: Props) {
+export default function ChecklistSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -31,6 +32,9 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
 
       {/* Headline */}
       <div
+        contentEditable={!!onUpdate}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
           top: 48,
@@ -39,6 +43,9 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
           fontSize: 32,
           fontWeight: 700,
           color: '#000d05',
+          outline: 'none',
+          cursor: onUpdate ? 'text' : 'default',
+          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -66,6 +73,11 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
           >
             {/* Checkbox */}
             <div
+              onClick={() => {
+                const next = [...data.items];
+                next[i] = { ...next[i], checked: !next[i].checked };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 width: 24,
                 height: 24,
@@ -78,6 +90,8 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
                 fontSize: 14,
                 color: '#ffffff',
                 lineHeight: 1,
+                cursor: onUpdate ? 'pointer' : 'default',
+                userSelect: 'none',
               }}
             >
               {item.checked ? '✓' : ''}
@@ -85,6 +99,13 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
 
             {/* Title */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = { ...next[i], title: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
@@ -94,6 +115,9 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
                 width: 240,
                 flexShrink: 0,
                 lineHeight: 1.3,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item.title}
@@ -101,6 +125,13 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
 
             {/* Body */}
             <div
+              contentEditable={!!onUpdate}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const next = [...data.items];
+                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                onUpdate?.({ ...data, items: next });
+              }}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
@@ -109,6 +140,9 @@ export default function ChecklistSlide({ data, interactive = true }: Props) {
                 lineHeight: 1.5,
                 flex: 1,
                 marginLeft: 24,
+                outline: 'none',
+                cursor: onUpdate ? 'text' : 'default',
+                borderRadius: 2,
               }}
             >
               {item.body}

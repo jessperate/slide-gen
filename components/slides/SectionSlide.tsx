@@ -5,9 +5,10 @@ import { SectionSlideData } from '@/lib/slides';
 interface Props {
   data: SectionSlideData;
   interactive?: boolean;
+  onUpdate?: (updates: Partial<SectionSlideData>) => void;
 }
 
-export default function SectionSlide({ data, interactive = true }: Props) {
+export default function SectionSlide({ data, interactive = true, onUpdate }: Props) {
   return (
     <div
       style={{
@@ -37,7 +38,18 @@ export default function SectionSlide({ data, interactive = true }: Props) {
           alignItems: 'center',
         }}
       >
-        <span>{data.number}</span>
+        <span
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, number: e.currentTarget.textContent ?? '' })}
+          style={{
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
+          }}
+        >
+          {data.number}
+        </span>
         <span
           style={{
             width: 1,
@@ -46,7 +58,18 @@ export default function SectionSlide({ data, interactive = true }: Props) {
             display: 'inline-block',
           }}
         />
-        <span>{data.label}</span>
+        <span
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, label: e.currentTarget.textContent ?? '' })}
+          style={{
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
+          }}
+        >
+          {data.label}
+        </span>
       </div>
 
       {/* Left accent bar + headline row */}
@@ -74,6 +97,9 @@ export default function SectionSlide({ data, interactive = true }: Props) {
 
         {/* Headline */}
         <div
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 56,
@@ -83,6 +109,9 @@ export default function SectionSlide({ data, interactive = true }: Props) {
             lineHeight: 1.15,
             whiteSpace: 'pre-line',
             maxWidth: 700,
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+            borderRadius: 2,
           }}
         >
           {data.headline}
