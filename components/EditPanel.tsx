@@ -112,7 +112,7 @@ function Field({
   );
 }
 
-const GIPHY_KEY = 'dcf93d4f15744aa9b5b3d74c8e09a39b';
+const GIPHY_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY ?? 'dcf93d4f15744aa9b5b3d74c8e09a39b';
 
 interface GifResult {
   id: string;
