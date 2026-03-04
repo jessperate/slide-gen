@@ -213,6 +213,32 @@ function MemberImageUpload({
   );
 }
 
+const CUSTOMER_LOGOS = [
+  'kayak.com',
+  'checkr.com',
+  'klaviyo.com',
+  'angi.com',
+  'hubspot.com',
+  'amplitude.com',
+  'upwork.com',
+  'webflow.com',
+  'ironcladapp.com',
+  'commvault.com',
+  'chime.com',
+  'xero.com',
+  'brex.com',
+  'apollo.io',
+  'wiz.io',
+  'monday.com',
+  'notion.so',
+  'ramp.com',
+  'sage.com',
+  'legalzoom.com',
+  'sproutsocial.com',
+  'lightspeedhq.com',
+  'carta.com',
+];
+
 function BrandfetchSection({
   logos,
   onUpdate,
@@ -251,6 +277,51 @@ function BrandfetchSection({
   return (
     <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
       <label style={labelStyle}>Brand Logos</label>
+
+      {/* AirOps customer logo grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 4,
+          marginBottom: 12,
+        }}
+      >
+        {CUSTOMER_LOGOS.map((d) => {
+          const alreadyAdded = logos.some((l) => l.domain === d);
+          return (
+            <button
+              key={d}
+              onClick={() => {
+                if (alreadyAdded) return;
+                onUpdate([
+                  ...logos,
+                  { id: `logo-${Date.now()}-${d}`, domain: d, x: 50, y: 85, width: 120 },
+                ]);
+              }}
+              title={d}
+              style={{
+                background: alreadyAdded ? '#1a2a1f' : '#111',
+                border: `1px solid ${alreadyAdded ? '#008c44' : '#2a2a2a'}`,
+                padding: '7px 4px',
+                cursor: alreadyAdded ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 36,
+                transition: 'border-color 0.15s, background 0.15s',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://cdn.brandfetch.io/${d}/w/200/h/60`}
+                alt={d}
+                style={{ height: 16, width: 'auto', display: 'block', maxWidth: '100%', objectFit: 'contain', filter: alreadyAdded ? 'opacity(0.4)' : 'none' }}
+              />
+            </button>
+          );
+        })}
+      </div>
 
       {/* Existing logos list */}
       {logos.length > 0 && (
