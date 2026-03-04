@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { SlideData } from '@/lib/slides';
+import { SlideData, LogoOverlay } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import CoverSlide from './slides/CoverSlide';
 import SectionSlide from './slides/SectionSlide';
@@ -195,6 +195,94 @@ export function renderSlide(
   }
 }
 
+function LogoLayer({
+  logos,
+  scale,
+  interactive,
+  onUpdate,
+}: {
+  logos: LogoOverlay[];
+  scale: number;
+  interactive: boolean;
+  onUpdate?: (logos: LogoOverlay[]) => void;
+}) {
+  const localLogosRef = useRef(logos);
+  const [displayLogos, setDisplayLogos] = useState(logos);
+
+  useEffect(() => {
+    localLogosRef.current = logos;
+    setDisplayLogos(logos);
+  }, [logos]);
+
+  const handleMouseDown = (e: React.MouseEvent, logo: LogoOverlay) => {
+    if (!interactive || !onUpdate) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startLogoX = logo.x;
+    const startLogoY = logo.y;
+
+    const handleMouseMove = (me: MouseEvent) => {
+      const dx = (me.clientX - startX) / scale;
+      const dy = (me.clientY - startY) / scale;
+      const newX = Math.max(0, Math.min(100, startLogoX + (dx / 1280) * 100));
+      const newY = Math.max(0, Math.min(100, startLogoY + (dy / 720) * 100));
+      const updated = localLogosRef.current.map((l) =>
+        l.id === logo.id ? { ...l, x: newX, y: newY } : l
+      );
+      localLogosRef.current = updated;
+      setDisplayLogos([...updated]);
+    };
+
+    const handleMouseUp = () => {
+      onUpdate(localLogosRef.current);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  if (displayLogos.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 20,
+        pointerEvents: interactive ? 'auto' : 'none',
+      }}
+    >
+      {displayLogos.map((logo) => (
+        <div
+          key={logo.id}
+          onMouseDown={(e) => handleMouseDown(e, logo)}
+          style={{
+            position: 'absolute',
+            left: (logo.x / 100) * 1280,
+            top: (logo.y / 100) * 720,
+            transform: 'translate(-50%, -50%)',
+            cursor: interactive ? 'grab' : 'default',
+            userSelect: 'none',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://cdn.brandfetch.io/${logo.domain}/w/400/h/120`}
+            alt={logo.domain}
+            draggable={false}
+            style={{ width: logo.width, height: 'auto', display: 'block' }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SlideCanvas({ slide, interactive = true, className, style, onUpdate, theme = DEFAULT_THEME }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -218,6 +306,8 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
     return () => observer.disconnect();
   }, []);
 
+  const logos = (slide as { logos?: LogoOverlay[] }).logos ?? [];
+
   return (
     <div
       ref={containerRef}
@@ -240,9 +330,20 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
           width: 1280,
           height: 720,
           flexShrink: 0,
+          position: 'relative',
         }}
       >
         {renderSlide(slide, interactive, onUpdate, theme)}
+        <LogoLayer
+          logos={logos}
+          scale={scale}
+          interactive={interactive}
+          onUpdate={
+            onUpdate
+              ? (updatedLogos) => onUpdate({ logos: updatedLogos } as Partial<SlideData>)
+              : undefined
+          }
+        />
       </div>
     </div>
   );

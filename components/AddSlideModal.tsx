@@ -64,10 +64,11 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
           background: '#141414',
           border: '1px solid #2a2a2a',
           borderRadius: 0,
-          padding: 32,
-          width: 760,
+          width: 520,
           maxHeight: '85vh',
-          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
@@ -76,7 +77,9 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 28,
+            padding: '24px 28px',
+            borderBottom: '1px solid #2a2a2a',
+            flexShrink: 0,
           }}
         >
           <div>
@@ -121,14 +124,8 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
           </button>
         </div>
 
-        {/* Grid of slide types — 3 columns */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 16,
-          }}
-        >
+        {/* Scrollable list of slide types */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '12px 0' }}>
           {slideTypes.map(({ type, label }) => {
             const template = defaultSlideByType[type];
             if (!template) return null;
@@ -140,25 +137,25 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
                   all: 'unset',
                   cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
+                  alignItems: 'center',
+                  gap: 16,
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '10px 28px',
+                  transition: 'background 0.1s',
                 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
                 {/* Preview thumbnail */}
                 <div
                   style={{
-                    width: '100%',
+                    width: 160,
                     height: THUMB_HEIGHT,
+                    flexShrink: 0,
                     position: 'relative',
                     overflow: 'hidden',
                     border: '1px solid #2a2a2a',
-                    transition: 'border-color 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = '#00ff64';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2a2a';
                   }}
                 >
                   <div
@@ -176,13 +173,10 @@ export default function AddSlideModal({ onAdd, onClose }: Props) {
                 {/* Label */}
                 <div
                   style={{
-                    fontFamily: '"Saans Mono", monospace',
-                    fontSize: 10,
+                    fontFamily: '"Saans", sans-serif',
+                    fontSize: 14,
                     fontWeight: 500,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.5)',
-                    textAlign: 'center',
+                    color: '#F8FFFA',
                   }}
                 >
                   {label}

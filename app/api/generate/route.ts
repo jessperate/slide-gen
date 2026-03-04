@@ -23,7 +23,7 @@ You can adjust the number and order of slides (8–12 total) based on what serve
 
 SLIDE TYPES — return valid JSON matching these interfaces exactly:
 
-{ type: "cover", eyebrow: string, headline: string, subheadline?: string }
+{ type: "cover", eyebrow: string, headline: string, subheadline?: string, imageUrl?: string }
 { type: "section", number: string, label: string, headline: string }
 { type: "stats", headline: string, thesis: string, metrics: [{ value: string, label: string, color: "olive"|"teal"|"magenta" }] }
   — always 3 metrics, each color used once
@@ -31,7 +31,7 @@ SLIDE TYPES — return valid JSON matching these interfaces exactly:
   — 3 columns
 { type: "content", headline: string, columns: [{ heading: string, body: string }] }
   — 2 columns
-{ type: "quote", quote: string, attribution: string }
+{ type: "quote", quote: string, attribution: string, imageUrl?: string }
 { type: "customer-story", customerName: string, headline: string, body: string, attribution: string, metrics: [{ value: string, label: string }] }
   — 2–3 metrics
 { type: "three-col", headline: string, columns: [{ icon: string, header: string, body: string }] }
@@ -43,6 +43,8 @@ SLIDE TYPES — return valid JSON matching these interfaces exactly:
 { type: "agenda", title: string, items: string[] }
   — 4–7 items
 { type: "back-cover", cta: string, url: string }
+{ type: "big-quote", quote: string, attribution: string, role?: string, imageUrl?: string }
+{ type: "two-col-media", eyebrow?: string, headline: string, body: string, imageUrl?: string }
 
 RULES:
 - Headlines: punchy, specific, present tense. Never generic ("Introduction", "Overview").
@@ -55,17 +57,41 @@ RULES:
 
 const MAX_CONTEXT_CHARS = 6000;
 
-async function fetchUrlText(url: string): Promise<string> {
+function extractImages(html: string, baseUrl: string): string[] {
+  const seen = new Set<string>();
+  const results: string[] = [];
+
+  // Match src="..." and src='...' in img tags
+  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    let src = match[1];
+    // Skip data URIs, SVGs, tracking pixels, and tiny icons
+    if (src.startsWith('data:')) continue;
+    if (src.includes('.svg')) continue;
+    if (/1x1|pixel|track|spacer|blank/i.test(src)) continue;
+    // Resolve relative URLs
+    try {
+      src = new URL(src, baseUrl).href;
+    } catch { continue; }
+    if (!seen.has(src)) { seen.add(src); results.push(src); }
+    if (results.length >= 6) break;
+  }
+  return results;
+}
+
+async function fetchUrlContent(url: string): Promise<{ text: string; images: string[] }> {
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const html = await res.text();
-  // Strip HTML tags and collapse whitespace
+  const images = extractImages(html, url);
   const text = html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
-    .trim();
-  return text.slice(0, MAX_CONTEXT_CHARS);
+    .trim()
+    .slice(0, MAX_CONTEXT_CHARS);
+  return { text, images };
 }
 
 export async function POST(request: Request) {
@@ -73,19 +99,26 @@ export async function POST(request: Request) {
     const { topic, audience, tone, context, contextUrl } = await request.json();
 
     let additionalContext = '';
+    let contextImages: string[] = [];
     if (contextUrl) {
       try {
-        additionalContext = await fetchUrlText(contextUrl);
+        const fetched = await fetchUrlContent(contextUrl);
+        additionalContext = fetched.text;
+        contextImages = fetched.images;
       } catch {
-        // If fetch fails, ignore and proceed without context
+        // If fetch fails, proceed without context
       }
     } else if (context) {
       additionalContext = (context as string).slice(0, MAX_CONTEXT_CHARS);
     }
 
+    const imageHint = contextImages.length > 0
+      ? `\n\nImages available from the context URL — you MAY use these as imageUrl values in cover, quote, big-quote, or two-col-media slides where they fit the content:\n${contextImages.map((u, i) => `${i + 1}. ${u}`).join('\n')}`
+      : '';
+
     const userMessage = `Create a presentation deck about: "${topic}"
 Audience: ${audience || 'business professionals'}
-Tone: ${tone || 'persuasive and clear'}${additionalContext ? `\n\nAdditional context for the deck:\n${additionalContext}` : ''}
+Tone: ${tone || 'persuasive and clear'}${additionalContext ? `\n\nAdditional context for the deck:\n${additionalContext}` : ''}${imageHint}
 
 Return a JSON array of 9–11 slides following the narrative arc in your instructions.`;
 

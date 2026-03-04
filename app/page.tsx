@@ -17,7 +17,9 @@ const THEME_KEY = 'slidegen-theme';
 const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
 
 export default function SlideGenPage() {
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem('slidegen-current-deck'); } catch { return true; }
+  });
   const [slides, setSlides] = useState<SlideData[]>(defaultSlides);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);

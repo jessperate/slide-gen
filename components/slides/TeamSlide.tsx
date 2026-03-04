@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { TeamSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
@@ -9,6 +10,112 @@ interface Props {
   interactive?: boolean;
   onUpdate?: (updates: Partial<TeamSlideData>) => void;
   theme?: SlideTheme;
+}
+
+function MemberAvatar({
+  member,
+  avatarSize,
+  theme,
+  onUpload,
+}: {
+  member: { name: string; imageUrl?: string };
+  avatarSize: number;
+  theme: SlideTheme;
+  onUpload?: (url: string) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setLoading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve((ev.target?.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/stipple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      });
+      const data = await res.json();
+      if (res.ok) onUpload?.(`data:${data.mimeType};base64,${data.imageBase64}`);
+    } catch { /* silent */ } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ position: 'relative', width: avatarSize, height: avatarSize, flexShrink: 0 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Circle */}
+      <div
+        style={{
+          width: avatarSize,
+          height: avatarSize,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: `2px solid ${theme.stroke}`,
+          background: theme.darkBg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {member.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={member.imageUrl} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <div style={{ fontFamily: '"Serrif VF", serif', fontSize: avatarSize * 0.38, fontWeight: 400, color: theme.accent, lineHeight: 1 }}>
+            {member.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      {/* Upload overlay (interactive only) */}
+      {onUpload && (
+        <>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+          <div
+            onClick={() => !loading && fileInputRef.current?.click()}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.55)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: loading ? 'default' : 'pointer',
+              opacity: hovered || loading ? 1 : 0,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            {loading ? (
+              <div style={{ color: '#00ff64', fontSize: 11, fontFamily: '"Saans Mono", monospace', textAlign: 'center', letterSpacing: '0.05em', padding: '0 8px' }}>
+                ✦
+              </div>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function TeamSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
@@ -85,51 +192,16 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
             }}
           >
             {/* Avatar */}
-            {member.imageUrl ? (
-              <div
-                style={{
-                  width: avatarSize,
-                  height: avatarSize,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: `2px solid ${theme.stroke}`,
-                  flexShrink: 0,
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={member.imageUrl}
-                  alt={member.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-            ) : (
-              <div
-                style={{
-                  width: avatarSize,
-                  height: avatarSize,
-                  borderRadius: '50%',
-                  background: theme.darkBg,
-                  border: `2px solid ${theme.stroke}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: '"Serrif VF", serif',
-                    fontSize: avatarSize * 0.38,
-                    fontWeight: 400,
-                    color: theme.accent,
-                    lineHeight: 1,
-                  }}
-                >
-                  {member.name.charAt(0).toUpperCase()}
-                </div>
-              </div>
-            )}
+            <MemberAvatar
+              member={member}
+              avatarSize={avatarSize}
+              theme={theme}
+              onUpload={onUpdate ? (url) => {
+                const members = [...data.members];
+                members[i] = { ...members[i], imageUrl: url };
+                onUpdate({ ...data, members });
+              } : undefined}
+            />
 
             {/* Name */}
             <div

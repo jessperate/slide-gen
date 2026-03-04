@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import AirOpsLogo from '@/components/AirOpsLogo';
 import {
   SlideData,
+  LogoOverlay,
   DiagramSlideData,
   StatsSlideData,
   ContentSlideData,
@@ -119,6 +120,267 @@ interface GifResult {
     fixed_height_small: { url: string };
     original: { url: string };
   };
+}
+
+function MemberImageUpload({
+  imageUrl,
+  onUpdate,
+}: {
+  imageUrl: string | undefined;
+  onUpdate: (url: string | undefined) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setLoading(true);
+    setError('');
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const result = ev.target?.result as string;
+          resolve(result.split(',')[1]); // strip data:...;base64,
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('/api/stipple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed');
+      onUpdate(`data:${data.mimeType};base64,${data.imageBase64}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process image');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={sectionStyle}>
+      <label style={labelStyle}>Photo</label>
+      {imageUrl && (
+        <div style={{ position: 'relative', marginBottom: 8 }}>
+          <img
+            src={imageUrl}
+            alt=""
+            style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block', border: '1px solid #2a2a2a', filter: 'grayscale(100%)' }}
+          />
+          <button
+            onClick={() => onUpdate(undefined)}
+            style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 11, cursor: 'pointer', padding: '2px 6px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={loading}
+        style={{
+          width: '100%',
+          background: '#1a1a1a',
+          border: '1px dashed #3a3a3a',
+          color: loading ? 'rgba(0,255,100,0.6)' : 'rgba(255,255,255,0.5)',
+          fontFamily: '"Saans", sans-serif',
+          fontSize: 12,
+          cursor: loading ? 'default' : 'pointer',
+          padding: '10px',
+          textAlign: 'center',
+          transition: 'border-color 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; } }}
+        onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; } }}
+      >
+        {loading ? '✦ Applying stipple effect…' : '↑ Upload photo'}
+      </button>
+      {error && <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464', marginTop: 6 }}>{error}</div>}
+      {!error && !loading && (
+        <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6, lineHeight: 1.5 }}>
+          Gemini will apply a stipple illustration effect
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BrandfetchSection({
+  logos,
+  onUpdate,
+}: {
+  logos: LogoOverlay[];
+  onUpdate: (logos: LogoOverlay[]) => void;
+}) {
+  const [domain, setDomain] = useState('');
+  const [preview, setPreview] = useState('');
+  const [imgError, setImgError] = useState(false);
+
+  const cleanDomain = (raw: string) =>
+    raw.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+
+  const handleInput = (v: string) => {
+    setDomain(v);
+    setPreview(cleanDomain(v));
+    setImgError(false);
+  };
+
+  const addLogo = () => {
+    if (!preview || imgError) return;
+    const newLogo: LogoOverlay = {
+      id: `logo-${Date.now()}`,
+      domain: preview,
+      x: 50,
+      y: 85,
+      width: 120,
+    };
+    onUpdate([...logos, newLogo]);
+    setDomain('');
+    setPreview('');
+    setImgError(false);
+  };
+
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+      <label style={labelStyle}>Brand Logos</label>
+
+      {/* Existing logos list */}
+      {logos.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          {logos.map((logo) => (
+            <div
+              key={logo.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 4,
+                background: '#1a1a1a',
+                border: '1px solid #2a2a2a',
+                padding: '6px 8px',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://cdn.brandfetch.io/${logo.domain}/w/200/h/60`}
+                alt={logo.domain}
+                style={{ height: 18, width: 'auto', flexShrink: 0, display: 'block' }}
+              />
+              <span
+                style={{
+                  flex: 1,
+                  fontFamily: '"Saans Mono", monospace',
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.4)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {logo.domain}
+              </span>
+              <button
+                onClick={() => onUpdate(logos.filter((l) => l.id !== logo.id))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  padding: '0 2px',
+                  flexShrink: 0,
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Domain input + add button */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={domain}
+          onChange={(e) => handleInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addLogo()}
+          placeholder="e.g. hubspot.com"
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          onClick={addLogo}
+          disabled={!preview || imgError}
+          style={{
+            background: preview && !imgError ? '#008c44' : '#2a2a2a',
+            border: `1px solid ${preview && !imgError ? '#008c44' : '#3a3a3a'}`,
+            color: '#F8FFFA',
+            fontFamily: '"Saans", sans-serif',
+            fontSize: 14,
+            cursor: preview && !imgError ? 'pointer' : 'default',
+            padding: '6px 12px',
+            flexShrink: 0,
+            transition: 'background 0.15s, border-color 0.15s',
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      {/* Logo preview */}
+      {preview && (
+        <div
+          style={{
+            marginTop: 8,
+            background: '#0f0f0f',
+            border: '1px solid #2a2a2a',
+            padding: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 40,
+          }}
+        >
+          {imgError ? (
+            <span style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464' }}>
+              Logo not found
+            </span>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://cdn.brandfetch.io/${preview}/w/400/h/120`}
+              alt=""
+              onError={() => setImgError(true)}
+              onLoad={() => setImgError(false)}
+              style={{ height: 28, width: 'auto', display: 'block' }}
+            />
+          )}
+        </div>
+      )}
+
+      <div
+        style={{
+          fontFamily: '"Saans", sans-serif',
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.25)',
+          marginTop: 6,
+          lineHeight: 1.5,
+        }}
+      >
+        Drag logos on the slide to reposition
+      </div>
+    </div>
+  );
 }
 
 function GiphySearch({ onSelect }: { onSelect: (url: string) => void }) {
@@ -902,9 +1164,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
                 <Field label="Role" value={member.role} onChange={(v) => {
                   const members = [...teamSlide.members]; members[i] = { ...members[i], role: v }; update({ members });
                 }} />
-                <Field label="Photo URL" value={member.imageUrl ?? ''} onChange={(v) => {
-                  const members = [...teamSlide.members]; members[i] = { ...members[i], imageUrl: v || undefined }; update({ members });
-                }} />
+                <MemberImageUpload
+                  imageUrl={member.imageUrl}
+                  onUpdate={(url) => {
+                    const members = [...teamSlide.members]; members[i] = { ...members[i], imageUrl: url }; update({ members });
+                  }}
+                />
               </div>
             ))}
           </>
@@ -1137,6 +1402,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             <GiphySearch onSelect={(url) => update({ imageUrl: url } as Partial<SlideData>)} />
           </>
         )}
+
+        {/* Brandfetch logo overlay */}
+        <BrandfetchSection
+          logos={(slide as { logos?: LogoOverlay[] }).logos ?? []}
+          onUpdate={(logos) => update({ logos } as Partial<SlideData>)}
+        />
 
         {panelContent()}
       </div>
