@@ -44,7 +44,7 @@ export async function exportToPdf(
       const dataUrl = await toPng(container, {
         width: SLIDE_W,
         height: SLIDE_H,
-        pixelRatio: 1,
+        pixelRatio: 2,
         skipFonts: false,
       });
 
