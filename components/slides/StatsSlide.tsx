@@ -11,8 +11,7 @@ interface Props {
 
 export default function StatsSlide({ data, interactive = true, onUpdate }: Props) {
   const metricsCount = data.metrics.length;
-  const totalWidth = 1232 - 48; // 1184px
-  const metricWidth = (totalWidth - (metricsCount - 1) * 16) / metricsCount;
+  const metricWidth = (1184 - (metricsCount - 1) * 16) / metricsCount;
 
   return (
     <div
@@ -26,7 +25,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-right */}
+      {/* AirOps logo bottom-left */}
       <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
         <AirOpsLogo color="#001408" width={80} />
       </div>
@@ -34,116 +33,100 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
       {/* Green bottom bar */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: '#00ff64' }} />
 
-      {/* Headline */}
-      <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
-        style={{
-          position: 'absolute',
-          top: 48,
-          left: 48,
-          fontFamily: '"Serrif VF", serif',
-          fontSize: 44,
-          fontWeight: 400,
-          color: '#000d05',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1,
-          outline: 'none',
-          cursor: onUpdate ? 'text' : 'default',
-          borderRadius: 2,
-        }}
-      >
-        {data.headline}
-      </div>
-
-      {/* Thesis box */}
-      <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, thesis: e.currentTarget.textContent ?? '' })}
-        style={{
-          position: 'absolute',
-          top: 140,
-          left: 48,
-          width: 560,
-          background: 'white',
-          border: '1px solid #d4e8da',
-          padding: 24,
-          fontFamily: '"Saans", sans-serif',
-          fontSize: 15,
-          fontWeight: 700,
-          color: '#000d05',
-          lineHeight: 1.5,
-          outline: 'none',
-          cursor: onUpdate ? 'text' : 'default',
-          borderRadius: 2,
-        }}
-      >
-        {data.thesis}
-      </div>
-
-      {/* Arrow from thesis to metrics */}
-      <svg
-        style={{
-          position: 'absolute',
-          top: 140,
-          left: 48,
-          width: 560,
-          height: 200,
-          pointerEvents: 'none',
-          overflow: 'visible',
-        }}
-        viewBox="0 0 560 200"
-      >
-        <line
-          x1="280"
-          y1="200"
-          x2="280"
-          y2="220"
-          stroke="#2D8859"
-          strokeWidth="1.5"
-          markerEnd="url(#arrowhead)"
-        />
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="8"
-            markerHeight="6"
-            refX="4"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill="#2D8859" />
-          </marker>
-        </defs>
-      </svg>
-
-      {/* Metrics row */}
+      {/* Left column: headline + thesis */}
       <div
         style={{
           position: 'absolute',
-          top: 320,
-          left: 48,
-          right: 48,
-          height: 280,
+          top: 64,
+          left: 64,
+          width: 480,
+          bottom: 80,
           display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Headline */}
+        <div
+          contentEditable={!!onUpdate}
+          suppressContentEditableWarning
+          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          style={{
+            fontFamily: '"Serrif VF", serif',
+            fontSize: 44,
+            fontWeight: 400,
+            color: '#000d05',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            marginBottom: 32,
+            outline: 'none',
+            cursor: onUpdate ? 'text' : 'default',
+          }}
+        >
+          {data.headline}
+        </div>
+
+        {/* Thesis — green left-border accent, no box */}
+        <div
+          style={{
+            borderLeft: '3px solid #008c44',
+            paddingLeft: 20,
+          }}
+        >
+          <div
+            contentEditable={!!onUpdate}
+            suppressContentEditableWarning
+            onBlur={(e) => onUpdate?.({ ...data, thesis: e.currentTarget.textContent ?? '' })}
+            style={{
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 15,
+              fontWeight: 400,
+              color: '#3a4a3e',
+              lineHeight: 1.6,
+              outline: 'none',
+              cursor: onUpdate ? 'text' : 'default',
+            }}
+          >
+            {data.thesis}
+          </div>
+        </div>
+      </div>
+
+      {/* Vertical separator */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 64,
+          bottom: 80,
+          left: 592,
+          width: 1,
+          background: '#d4e8da',
+        }}
+      />
+
+      {/* Right column: metric cards */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 64,
+          left: 624,
+          right: 64,
+          bottom: 80,
+          display: 'flex',
+          flexDirection: 'column',
           gap: 16,
+          justifyContent: 'center',
         }}
       >
         {data.metrics.map((metric, i) => (
           <div
             key={i}
             style={{
-              width: metricWidth,
-              height: 280,
               background: METRIC_COLORS[metric.color] || '#F5F5E8',
+              padding: '28px 32px',
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '32px 24px',
-              gap: 12,
+              alignItems: 'baseline',
+              gap: 20,
             }}
           >
             <div
@@ -156,14 +139,14 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
               }}
               style={{
                 fontFamily: '"Serrif VF", serif',
-                fontSize: 52,
+                fontSize: 56,
                 fontWeight: 400,
                 color: '#000d05',
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
+                flexShrink: 0,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
               {metric.value}
@@ -181,11 +164,9 @@ export default function StatsSlide({ data, interactive = true, onUpdate }: Props
                 fontSize: 14,
                 fontWeight: 400,
                 color: '#676c79',
-                textAlign: 'center',
                 lineHeight: 1.4,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
               {metric.label}

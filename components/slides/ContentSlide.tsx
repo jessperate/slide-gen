@@ -22,7 +22,7 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
         fontFamily: '"Saans", sans-serif',
       }}
     >
-      {/* AirOps logo bottom-right */}
+      {/* AirOps logo bottom-left */}
       <div style={{ position: 'absolute', bottom: 32, left: 48 }}>
         <AirOpsLogo color="#001408" width={80} />
       </div>
@@ -37,8 +37,9 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
         onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
         style={{
           position: 'absolute',
-          top: 48,
-          left: 48,
+          top: 64,
+          left: 64,
+          right: 64,
           fontFamily: '"Serrif VF", serif',
           fontSize: 44,
           fontWeight: 400,
@@ -47,7 +48,6 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
           lineHeight: 1.1,
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
-          borderRadius: 2,
         }}
       >
         {data.headline}
@@ -57,9 +57,9 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
       <div
         style={{
           position: 'absolute',
-          top: 128,
-          left: 48,
-          right: 48,
+          top: 144,
+          left: 64,
+          right: 64,
           height: 1,
           background: '#d4e8da',
         }}
@@ -69,22 +69,36 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
       <div
         style={{
           position: 'absolute',
-          top: 152,
-          left: 48,
-          right: 48,
-          bottom: 80,
+          top: 168,
+          left: 64,
+          right: 64,
+          bottom: 96,
           display: 'flex',
-          gap: 24,
+          gap: 0,
         }}
       >
         {data.columns.map((col, i) => (
           <div
             key={i}
             style={{
-              width: 556,
-              flexShrink: 0,
+              flex: 1,
+              paddingRight: i < data.columns.length - 1 ? 48 : 0,
+              paddingLeft: i > 0 ? 48 : 0,
+              borderLeft: i > 0 ? '1px solid #d4e8da' : 'none',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
+            {/* Green dot accent */}
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                background: '#008c44',
+                marginBottom: 16,
+                flexShrink: 0,
+              }}
+            />
             <div
               contentEditable={!!onUpdate}
               suppressContentEditableWarning
@@ -96,13 +110,12 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 18,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: '#000d05',
                 marginBottom: 16,
                 lineHeight: 1.3,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
               {col.heading}
@@ -117,13 +130,12 @@ export default function ContentSlide({ data, interactive = true, onUpdate }: Pro
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 400,
-                color: '#676c79',
-                lineHeight: 1.6,
+                color: '#3a4a3e',
+                lineHeight: 1.65,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
-                borderRadius: 2,
               }}
             >
               {col.body}

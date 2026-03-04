@@ -5,9 +5,11 @@ import { SlideData, defaultSlides } from '@/lib/slides';
 import ThumbnailRail from '@/components/ThumbnailRail';
 import EditPanel from '@/components/EditPanel';
 import AddSlideModal from '@/components/AddSlideModal';
+import OnboardingScreen from '@/components/OnboardingScreen';
 import { renderSlide } from '@/components/SlideCanvas';
 
 export default function SlideGenPage() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [slides, setSlides] = useState<SlideData[]>(defaultSlides);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -38,6 +40,17 @@ export default function SlideGenPage() {
 
     return () => observer.disconnect();
   }, []);
+
+  const handleGenerate = (rawSlides: unknown[]) => {
+    const generated = rawSlides as SlideData[];
+    setSlides(generated);
+    setActiveIndex(0);
+    setShowOnboarding(false);
+  };
+
+  const handleSkip = () => {
+    setShowOnboarding(false);
+  };
 
   const updateSlide = (updated: SlideData) => {
     setSlides((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -77,6 +90,11 @@ export default function SlideGenPage() {
 
   return (
     <>
+      {/* Onboarding overlay */}
+      {showOnboarding && (
+        <OnboardingScreen onGenerate={handleGenerate} onSkip={handleSkip} />
+      )}
+
       {/* Print output (hidden in screen, shown in print) */}
       <div style={{ display: 'none' }} className="print-output">
         {slides.map((slide) => (
@@ -135,13 +153,7 @@ export default function SlideGenPage() {
             >
               AirOps
             </div>
-            <div
-              style={{
-                width: 1,
-                height: 16,
-                background: '#2a2a2a',
-              }}
-            />
+            <div style={{ width: 1, height: 16, background: '#2a2a2a' }} />
             <div
               style={{
                 fontFamily: '"Saans", sans-serif',
@@ -166,6 +178,33 @@ export default function SlideGenPage() {
           >
             {activeIndex + 1} of {slides.length}
           </div>
+
+          {/* New deck button */}
+          <button
+            onClick={() => setShowOnboarding(true)}
+            style={{
+              background: 'transparent',
+              border: '1px solid #2a2a2a',
+              color: 'rgba(255,255,255,0.5)',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              padding: '6px 14px',
+              borderRadius: 0,
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64';
+              (e.currentTarget as HTMLButtonElement).style.color = '#00ff64';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a';
+              (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.5)';
+            }}
+          >
+            ✦ New deck
+          </button>
 
           {/* Add Slide button */}
           <button
@@ -310,9 +349,6 @@ export default function SlideGenPage() {
               cursor: activeIndex === 0 ? 'default' : 'pointer',
               padding: '6px 16px',
               borderRadius: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
               transition: 'border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
@@ -361,9 +397,6 @@ export default function SlideGenPage() {
               cursor: activeIndex === slides.length - 1 ? 'default' : 'pointer',
               padding: '6px 16px',
               borderRadius: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
               transition: 'border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
