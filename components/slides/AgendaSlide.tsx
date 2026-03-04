@@ -2,6 +2,7 @@
 
 import { AgendaSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
+import AirOpsLogo from '@/components/AirOpsLogo';
 
 interface Props {
   data: AgendaSlideData;
@@ -48,6 +49,13 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
           background: theme.darkBg,
         }}
       />
+
+      {/* AirOps logo bottom-left */}
+      {!data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 32, left: 48, zIndex: 1 }}>
+          <AirOpsLogo color={theme.logoOnLight} width={80} />
+        </div>
+      )}
 
       {/* Title */}
       <div
