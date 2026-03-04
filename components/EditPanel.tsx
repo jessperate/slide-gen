@@ -130,35 +130,40 @@ function MemberImageUpload({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rawBase64, setRawBase64] = useState<{ data: string; mime: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    setError('');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setRawBase64({ data: base64, mime: file.type });
+      onUpdate(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const applyStipple = async () => {
+    if (!rawBase64) return;
     setLoading(true);
     setError('');
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const result = ev.target?.result as string;
-          resolve(result.split(',')[1]); // strip data:...;base64,
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
       const res = await fetch('/api/stipple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+        body: JSON.stringify({ imageBase64: rawBase64.data, mimeType: rawBase64.mime }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed');
       onUpdate(`data:${data.mimeType};base64,${data.imageBase64}`);
+      setRawBase64(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process image');
+      setError(err instanceof Error ? err.message : 'Failed to apply stipple');
     } finally {
       setLoading(false);
     }
@@ -175,7 +180,7 @@ function MemberImageUpload({
             style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block', border: '1px solid #2a2a2a', filter: 'grayscale(100%)' }}
           />
           <button
-            onClick={() => onUpdate(undefined)}
+            onClick={() => { onUpdate(undefined); setRawBase64(null); setError(''); }}
             style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 11, cursor: 'pointer', padding: '2px 6px' }}
           >
             ✕
@@ -185,30 +190,45 @@ function MemberImageUpload({
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
       <button
         onClick={() => fileInputRef.current?.click()}
-        disabled={loading}
         style={{
           width: '100%',
           background: '#1a1a1a',
           border: '1px dashed #3a3a3a',
-          color: loading ? 'rgba(0,255,100,0.6)' : 'rgba(255,255,255,0.5)',
+          color: 'rgba(255,255,255,0.5)',
           fontFamily: '"Saans", sans-serif',
           fontSize: 12,
-          cursor: loading ? 'default' : 'pointer',
+          cursor: 'pointer',
           padding: '10px',
           textAlign: 'center',
           transition: 'border-color 0.15s, color 0.15s',
+          marginBottom: rawBase64 ? 6 : 0,
         }}
-        onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; } }}
-        onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; } }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
       >
-        {loading ? '✦ Applying stipple effect…' : '↑ Upload photo'}
+        ↑ Upload photo
       </button>
-      {error && <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464', marginTop: 6 }}>{error}</div>}
-      {!error && !loading && (
-        <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6, lineHeight: 1.5 }}>
-          Gemini will apply a stipple illustration effect
-        </div>
+      {rawBase64 && (
+        <button
+          onClick={applyStipple}
+          disabled={loading}
+          style={{
+            width: '100%',
+            background: loading ? '#1a1a1a' : '#002910',
+            border: '1px solid #008c44',
+            color: loading ? 'rgba(0,255,100,0.5)' : '#00ff64',
+            fontFamily: '"Saans", sans-serif',
+            fontSize: 12,
+            cursor: loading ? 'default' : 'pointer',
+            padding: '8px 10px',
+            textAlign: 'center',
+            transition: 'background 0.15s',
+          }}
+        >
+          {loading ? '✦ Applying…' : '✦ Apply stipple effect'}
+        </button>
       )}
+      {error && <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: '#ff6464', marginTop: 6 }}>{error}</div>}
     </div>
   );
 }

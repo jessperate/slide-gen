@@ -598,6 +598,12 @@ export default function SlideGenPage() {
               const newIdx = newSlides.findIndex((s) => s.id === activeId);
               if (newIdx >= 0) setActiveIndex(newIdx);
             }}
+            onDelete={(index) => {
+              if (slides.length <= 1) return;
+              const next = slides.filter((_, i) => i !== index);
+              setSlides(next);
+              setActiveIndex(Math.min(activeIndex, next.length - 1));
+            }}
             theme={theme}
             slideColorOverrides={slideColorOverrides}
           />

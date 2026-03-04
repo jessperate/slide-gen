@@ -29,6 +29,7 @@ interface Props {
   activeIndex: number;
   onSelect: (index: number) => void;
   onReorder: (newSlides: SlideData[]) => void;
+  onDelete: (index: number) => void;
   theme?: SlideTheme;
   slideColorOverrides?: Record<string, ColorMode>;
 }
@@ -38,11 +39,13 @@ interface ThumbProps {
   index: number;
   activeIndex: number;
   onSelect: (index: number) => void;
+  onDelete: (index: number) => void;
   slideTheme: SlideTheme;
   hasOverride: boolean;
+  canDelete: boolean;
 }
 
-function SortableThumb({ slide, index, activeIndex, onSelect, slideTheme, hasOverride }: ThumbProps) {
+function SortableThumb({ slide, index, activeIndex, onSelect, onDelete, slideTheme, hasOverride, canDelete }: ThumbProps) {
   const [hovered, setHovered] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
 
@@ -96,7 +99,18 @@ function SortableThumb({ slide, index, activeIndex, onSelect, slideTheme, hasOve
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: slideTheme.accent, flexShrink: 0, display: 'inline-block' }} />
           )}
           {hovered && !isDragging && (
-            <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>⠿</span>
+            <>
+              <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>⠿</span>
+              {canDelete && (
+                <span
+                  onMouseDown={(e) => { e.stopPropagation(); onDelete(index); }}
+                  style={{ color: 'rgba(255,80,80,0.7)', fontSize: 11, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+                  title="Delete slide"
+                >
+                  ✕
+                </span>
+              )}
+            </>
           )}
         </div>
 
@@ -130,7 +144,7 @@ function SortableThumb({ slide, index, activeIndex, onSelect, slideTheme, hasOve
   );
 }
 
-export default function ThumbnailRail({ slides, activeIndex, onSelect, onReorder, theme = DEFAULT_THEME, slideColorOverrides = {} }: Props) {
+export default function ThumbnailRail({ slides, activeIndex, onSelect, onReorder, onDelete, theme = DEFAULT_THEME, slideColorOverrides = {} }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -171,8 +185,10 @@ export default function ThumbnailRail({ slides, activeIndex, onSelect, onReorder
                 index={i}
                 activeIndex={activeIndex}
                 onSelect={onSelect}
+                onDelete={onDelete}
                 slideTheme={slideTheme}
                 hasOverride={hasOverride}
+                canDelete={slides.length > 1}
               />
             );
           })}
