@@ -1,0 +1,12 @@
+{
+  "pages": {
+    "/_app": []
+  },
+  "devFiles": [],
+  "polyfillFiles": [],
+  "lowPriorityFiles": [
+    "static/KUPERAIasOFBCE0i7rKbh/_ssgManifest.js",
+    "static/KUPERAIasOFBCE0i7rKbh/_buildManifest.js"
+  ],
+  "rootMainFiles": []
+}

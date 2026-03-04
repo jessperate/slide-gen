@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* AirOps brand fonts */
+@font-face {
+  font-family: "Saans";
+  src: url("/fonts/Saans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Saans";
+  src: url("/fonts/Saans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Saans";
+  src: url("/fonts/Saans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Saans Mono";
+  src: url("/fonts/SaansMono-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Serrif VF";
+  src: url("/fonts/SerrifVF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* AirOps brand tokens */
+:root {
+  --ao-forest:         #002910;
+  --ao-green-50:       #EEF5F1;
+  --ao-interaction:    #00ff64;
+  --ao-off-white:      #F8FFFA;
+  --ao-stroke:         #d4e8da;
+  --ao-mid-green:      #008c44;
+  --ao-near-black:     #000d05;
+  --ao-text-primary:   #000d05;
+  --ao-text-secondary: #676c79;
+  --ao-accent-yellow:  #EEFF8C;
+  --ao-green-500:      #008c44;
+}
+
+@theme inline {
+  --color-ao-forest:         var(--ao-forest);
+  --color-ao-green-50:       var(--ao-green-50);
+  --color-ao-interaction:    var(--ao-interaction);
+  --color-ao-off-white:      var(--ao-off-white);
+  --color-ao-stroke:         var(--ao-stroke);
+  --color-ao-mid-green:      var(--ao-mid-green);
+  --color-ao-text-primary:   var(--ao-text-primary);
+  --color-ao-text-secondary: var(--ao-text-secondary);
+  --font-saans:      "Saans", sans-serif;
+  --font-saans-mono: "Saans Mono", monospace;
+  --font-serrif:     "Serrif VF", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #1a1a1a;
+  color: var(--ao-text-primary);
+  font-family: "Saans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    overflow: visible;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .slide-for-print {
+    page-break-after: always;
+    width: 297mm;
+    height: 210mm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-for-print:last-child {
+    page-break-after: avoid;
+  }
+}
