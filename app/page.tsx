@@ -6,6 +6,7 @@ import ThumbnailRail from '@/components/ThumbnailRail';
 import EditPanel from '@/components/EditPanel';
 import AddSlideModal from '@/components/AddSlideModal';
 import OnboardingScreen from '@/components/OnboardingScreen';
+import AirOpsLogo from '@/components/AirOpsLogo';
 import { renderSlide } from '@/components/SlideCanvas';
 
 export default function SlideGenPage() {
@@ -142,17 +143,7 @@ export default function SlideGenPage() {
         >
           {/* Logo / title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-            <div
-              style={{
-                fontFamily: '"Serrif VF", serif',
-                fontSize: 18,
-                fontWeight: 400,
-                color: '#008c44',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              AirOps
-            </div>
+            <AirOpsLogo color="#008c44" width={72} />
             <div style={{ width: 1, height: 16, background: '#2a2a2a' }} />
             <div
               style={{
