@@ -9,15 +9,42 @@ import OnboardingScreen from '@/components/OnboardingScreen';
 import AirOpsLogo from '@/components/AirOpsLogo';
 import { renderSlide } from '@/components/SlideCanvas';
 
+const STORAGE_KEY = 'slidegen-current-deck';
+const SAVED_KEY = 'slidegen-saved-deck';
+
 export default function SlideGenPage() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [slides, setSlides] = useState<SlideData[]>(defaultSlides);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [canvasScale, setCanvasScale] = useState(1);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [hasSavedDeck, setHasSavedDeck] = useState(false);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const activeSlide = slides[activeIndex];
+
+  // Restore autosaved deck on mount (skip onboarding if we have one)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSlides(parsed);
+          setShowOnboarding(false);
+        }
+      }
+      setHasSavedDeck(!!localStorage.getItem(SAVED_KEY));
+    } catch {}
+  }, []);
+
+  // Autosave current deck whenever slides change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+    } catch {}
+  }, [slides]);
 
   // Compute canvas scale from container size
   useEffect(() => {
@@ -43,6 +70,11 @@ export default function SlideGenPage() {
   }, []);
 
   const handleGenerate = (rawSlides: unknown[]) => {
+    // Save current deck before replacing
+    try {
+      localStorage.setItem(SAVED_KEY, JSON.stringify(slides));
+      setHasSavedDeck(true);
+    } catch {}
     const generated = rawSlides as SlideData[];
     setSlides(generated);
     setActiveIndex(0);
@@ -51,6 +83,19 @@ export default function SlideGenPage() {
 
   const handleSkip = () => {
     setShowOnboarding(false);
+  };
+
+  const handleRestoreSaved = () => {
+    try {
+      const saved = localStorage.getItem(SAVED_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Swap: save current as the saved deck so they can toggle back
+        localStorage.setItem(SAVED_KEY, JSON.stringify(slides));
+        setSlides(parsed);
+        setActiveIndex(0);
+      }
+    } catch {}
   };
 
   const updateSlide = (updated: SlideData) => {
@@ -84,6 +129,18 @@ export default function SlideGenPage() {
 
   const handleExport = () => {
     window.print();
+  };
+
+  const handleGoogleSlides = async () => {
+    const { exportToPptx } = await import('@/lib/exportPptx');
+    setExportProgress({ current: 0, total: slides.length });
+    try {
+      await exportToPptx(slides, renderSlide, (current, total) => {
+        setExportProgress({ current, total });
+      });
+    } finally {
+      setExportProgress(null);
+    }
   };
 
   const slideWidth = Math.round(1280 * canvasScale);
@@ -170,6 +227,36 @@ export default function SlideGenPage() {
             {activeIndex + 1} of {slides.length}
           </div>
 
+          {/* Restore previous deck */}
+          {hasSavedDeck && (
+            <button
+              onClick={handleRestoreSaved}
+              title="Swap with your previous deck"
+              style={{
+                background: 'transparent',
+                border: '1px solid #2a2a2a',
+                color: 'rgba(255,255,255,0.4)',
+                fontFamily: '"Saans", sans-serif',
+                fontSize: 13,
+                cursor: 'pointer',
+                padding: '6px 14px',
+                borderRadius: 0,
+                transition: 'border-color 0.15s, color 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64';
+                (e.currentTarget as HTMLButtonElement).style.color = '#00ff64';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a';
+                (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)';
+              }}
+            >
+              ↩ Previous deck
+            </button>
+          )}
+
           {/* New deck button */}
           <button
             onClick={() => setShowOnboarding(true)}
@@ -226,6 +313,42 @@ export default function SlideGenPage() {
           >
             <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
             Add Slide
+          </button>
+
+          {/* Google Slides export */}
+          <button
+            onClick={handleGoogleSlides}
+            disabled={!!exportProgress}
+            style={{
+              background: 'transparent',
+              border: '1px solid #2a2a2a',
+              color: exportProgress ? 'rgba(255,255,255,0.4)' : '#F8FFFA',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: exportProgress ? 'default' : 'pointer',
+              padding: '6px 14px',
+              borderRadius: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'border-color 0.15s, color 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              if (!exportProgress) {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#00ff64';
+                (e.currentTarget as HTMLButtonElement).style.color = '#00ff64';
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a';
+              (e.currentTarget as HTMLButtonElement).style.color = exportProgress ? 'rgba(255,255,255,0.4)' : '#F8FFFA';
+            }}
+          >
+            {exportProgress
+              ? `Exporting ${exportProgress.current}/${exportProgress.total}…`
+              : '↗ Google Slides'}
           </button>
 
           {/* Export button */}
