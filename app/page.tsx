@@ -20,6 +20,7 @@ export default function SlideGenPage() {
   const [canvasScale, setCanvasScale] = useState(1);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
   const [hasSavedDeck, setHasSavedDeck] = useState(false);
+  const [googleSetupNeeded, setGoogleSetupNeeded] = useState(false);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const activeSlide = slides[activeIndex];
@@ -132,12 +133,21 @@ export default function SlideGenPage() {
   };
 
   const handleGoogleSlides = async () => {
-    const { exportToPptx } = await import('@/lib/exportPptx');
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      setGoogleSetupNeeded(true);
+      return;
+    }
+    const { buildPptxBlob } = await import('@/lib/exportPptx');
+    const { openInGoogleSlides } = await import('@/lib/googleSlides');
     setExportProgress({ current: 0, total: slides.length });
     try {
-      await exportToPptx(slides, renderSlide, (current, total) => {
+      const blob = await buildPptxBlob(slides, renderSlide, (current, total) => {
         setExportProgress({ current, total });
       });
+      setExportProgress({ current: slides.length, total: slides.length });
+      await openInGoogleSlides(blob);
+    } catch (err) {
+      console.error(err);
     } finally {
       setExportProgress(null);
     }
@@ -538,6 +548,76 @@ export default function SlideGenPage() {
           onAdd={addSlide}
           onClose={() => setShowAddModal(false)}
         />
+      )}
+
+      {/* Google setup modal */}
+      {googleSetupNeeded && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 200,
+            fontFamily: '"Saans", sans-serif',
+          }}
+          onClick={() => setGoogleSetupNeeded(false)}
+        >
+          <div
+            style={{
+              background: '#111111',
+              border: '1px solid #2a2a2a',
+              padding: 40,
+              width: 520,
+              maxWidth: '90vw',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: '"Serrif VF", serif', fontSize: 24, color: '#ffffff', marginBottom: 8 }}>
+              Connect Google Slides
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 24 }}>
+              Add a Google OAuth Client ID to enable one-click export directly into Google Slides.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
+              {[
+                ['1', 'Go to', 'console.cloud.google.com/apis/credentials'],
+                ['2', 'Click', '+ Create Credentials → OAuth client ID'],
+                ['3', 'Type:', 'Web application'],
+                ['4', 'Add authorized origin:', 'https://slide-gen-phi.vercel.app'],
+                ['5', 'Copy the Client ID and run:',
+                  'vercel env add NEXT_PUBLIC_GOOGLE_CLIENT_ID'],
+              ].map(([num, label, code]) => (
+                <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 11, color: '#008c44', minWidth: 18, paddingTop: 2 }}>{num}.</div>
+                  <div>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>{label} </span>
+                    <code style={{ fontFamily: '"Saans Mono", monospace', fontSize: 12, color: '#00ff64', background: 'rgba(0,255,100,0.06)', padding: '2px 6px' }}>{code}</code>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setGoogleSetupNeeded(false)}
+                style={{
+                  background: '#008c44',
+                  border: 'none',
+                  color: 'white',
+                  fontFamily: '"Saans", sans-serif',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  padding: '8px 20px',
+                }}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Global print styles */}
