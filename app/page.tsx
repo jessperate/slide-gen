@@ -19,6 +19,13 @@ const THEME_KEY = 'slidegen-theme';
 const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
 const VIEWER_NAME_KEY = 'slidegen-viewer-name';
 
+interface CommentReply {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+}
+
 interface SlideComment {
   id: string;
   slideId: string;
@@ -27,6 +34,8 @@ interface SlideComment {
   text: string;
   author: string;
   createdAt: string;
+  resolved?: boolean;
+  replies?: CommentReply[];
 }
 
 export default function SlideGenPage() {
@@ -56,6 +65,9 @@ export default function SlideGenPage() {
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [nameInputValue, setNameInputValue] = useState('');
   const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyInput, setReplyInput] = useState('');
+  const [showResolved, setShowResolved] = useState(false);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -263,6 +275,27 @@ export default function SlideGenPage() {
     setComments((prev) => [...prev, newComment]);
     setPendingCommentPos(null);
     setCommentInput('');
+  };
+
+  const submitReply = (commentId: string) => {
+    if (!replyInput.trim() || !viewerName) return;
+    const reply: CommentReply = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      author: viewerName,
+      text: replyInput.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    setComments((prev) => prev.map((c) =>
+      c.id === commentId ? { ...c, replies: [...(c.replies ?? []), reply] } : c
+    ));
+    setReplyInput('');
+    setReplyingToId(null);
+  };
+
+  const toggleResolved = (commentId: string) => {
+    setComments((prev) => prev.map((c) =>
+      c.id === commentId ? { ...c, resolved: !c.resolved } : c
+    ));
   };
 
   const confirmName = () => {
@@ -768,8 +801,8 @@ export default function SlideGenPage() {
                     width: 22,
                     height: 22,
                     borderRadius: '50% 50% 50% 0',
-                    background: hoveredCommentId === comment.id ? '#ffffff' : '#00ff64',
-                    color: '#002910',
+                    background: comment.resolved ? '#444' : hoveredCommentId === comment.id ? '#ffffff' : '#00ff64',
+                    color: comment.resolved ? '#888' : '#002910',
                     fontSize: 9,
                     fontWeight: 700,
                     display: 'flex',
@@ -1009,55 +1042,128 @@ export default function SlideGenPage() {
                   <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, fontFamily: '"Saans", sans-serif', textAlign: 'center', paddingTop: 40, lineHeight: 1.6 }}>
                     Click anywhere on the slide to pin a comment
                   </div>
-                ) : (
-                  comments.map((comment, idx) => {
-                    const slideIdx = slides.findIndex((s) => s.id === comment.slideId);
-                    const isCurrentSlide = comment.slideId === activeSlide?.id;
-                    return (
-                      <div
-                        key={comment.id}
-                        style={{
-                          padding: '10px 10px 8px',
-                          background: isCurrentSlide ? '#1a1a1a' : '#141414',
-                          border: `1px solid ${isCurrentSlide ? '#2a2a2a' : '#1e1e1e'}`,
-                          position: 'relative',
-                          cursor: isCurrentSlide ? 'default' : 'pointer',
-                          opacity: isCurrentSlide ? 1 : 0.6,
-                        }}
-                        onClick={() => !isCurrentSlide && setActiveIndex(slideIdx)}
-                      >
-                        <div style={{ display: 'flex', gap: 7, alignItems: 'flex-start', marginBottom: 5 }}>
-                          {/* Comment pin badge */}
-                          <div style={{
-                            width: 16, height: 16, borderRadius: '50% 50% 50% 0',
-                            background: '#00ff64', color: '#002910', fontSize: 8, fontWeight: 700,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontFamily: '"Saans Mono", monospace', transform: 'rotate(-45deg)',
-                            flexShrink: 0, marginTop: 1,
-                          }}>
-                            <span style={{ transform: 'rotate(45deg)', display: 'block' }}>{idx + 1}</span>
+                ) : (() => {
+                  const visibleComments = comments.filter((c) => showResolved || !c.resolved);
+                  const resolvedCount = comments.filter((c) => c.resolved).length;
+                  return (
+                    <>
+                      {visibleComments.map((comment, idx) => {
+                        const slideIdx = slides.findIndex((s) => s.id === comment.slideId);
+                        const isCurrentSlide = comment.slideId === activeSlide?.id;
+                        const isReplying = replyingToId === comment.id;
+                        return (
+                          <div
+                            key={comment.id}
+                            style={{
+                              background: isCurrentSlide ? '#1a1a1a' : '#141414',
+                              border: `1px solid ${comment.resolved ? '#1e1e1e' : isCurrentSlide ? '#2a2a2a' : '#1e1e1e'}`,
+                              opacity: comment.resolved ? 0.55 : isCurrentSlide ? 1 : 0.7,
+                              cursor: isCurrentSlide ? 'default' : 'pointer',
+                            }}
+                            onClick={() => !isCurrentSlide && setActiveIndex(slideIdx)}
+                          >
+                            {/* Header row */}
+                            <div style={{ padding: '9px 10px 6px', display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+                              <div style={{
+                                width: 16, height: 16, borderRadius: '50% 50% 50% 0',
+                                background: comment.resolved ? '#444' : '#00ff64',
+                                color: comment.resolved ? '#888' : '#002910',
+                                fontSize: 8, fontWeight: 700,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontFamily: '"Saans Mono", monospace', transform: 'rotate(-45deg)',
+                                flexShrink: 0, marginTop: 1,
+                              }}>
+                                <span style={{ transform: 'rotate(45deg)', display: 'block' }}>{idx + 1}</span>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: comment.resolved ? 'rgba(255,255,255,0.4)' : '#fff', fontFamily: '"Saans", sans-serif' }}>{comment.author}</span>
+                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: '"Saans Mono", monospace', marginLeft: 6 }}>Slide {slideIdx + 1}</span>
+                                {comment.resolved && <span style={{ fontSize: 10, color: '#008c44', fontFamily: '"Saans Mono", monospace', marginLeft: 6 }}>resolved</span>}
+                              </div>
+                              {/* Resolve + Delete buttons */}
+                              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleResolved(comment.id); }}
+                                  title={comment.resolved ? 'Reopen' : 'Resolve'}
+                                  style={{ background: comment.resolved ? 'rgba(0,140,68,0.15)' : 'transparent', border: `1px solid ${comment.resolved ? '#008c44' : '#2a2a2a'}`, color: comment.resolved ? '#00ff64' : 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: 10, padding: '2px 6px', lineHeight: 1, fontFamily: '"Saans", sans-serif' }}
+                                >
+                                  {comment.resolved ? '↩' : '✓'}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setComments((prev) => prev.filter((c) => c.id !== comment.id)); }}
+                                  title="Delete"
+                                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.15)', cursor: 'pointer', fontSize: 11, padding: '2px 4px', lineHeight: 1 }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Comment text */}
+                            <div style={{ fontSize: 12, color: comment.resolved ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.7)', fontFamily: '"Saans", sans-serif', lineHeight: 1.5, padding: '0 10px 8px 33px' }}>
+                              {comment.text}
+                            </div>
+
+                            {/* Replies */}
+                            {(comment.replies ?? []).length > 0 && (
+                              <div style={{ borderTop: '1px solid #222', margin: '0 0 0 0' }}>
+                                {(comment.replies ?? []).map((reply) => (
+                                  <div key={reply.id} style={{ padding: '7px 10px 7px 33px', borderBottom: '1px solid #1a1a1a' }}>
+                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', fontFamily: '"Saans", sans-serif', marginBottom: 3 }}>↳ {reply.author}</div>
+                                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: '"Saans", sans-serif', lineHeight: 1.4 }}>{reply.text}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Reply input or Reply button */}
+                            {!comment.resolved && (
+                              <div style={{ borderTop: '1px solid #1e1e1e', padding: '6px 10px' }} onClick={(e) => e.stopPropagation()}>
+                                {isReplying ? (
+                                  <div>
+                                    <textarea
+                                      autoFocus
+                                      value={replyInput}
+                                      onChange={(e) => setReplyInput(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(comment.id); }
+                                        if (e.key === 'Escape') { setReplyingToId(null); setReplyInput(''); }
+                                      }}
+                                      placeholder="Write a reply…"
+                                      rows={2}
+                                      style={{ width: '100%', background: '#111', border: '1px solid #2a2a2a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, padding: '5px 7px', resize: 'none', outline: 'none', caretColor: '#00ff64', boxSizing: 'border-box' }}
+                                    />
+                                    <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end', marginTop: 5 }}>
+                                      <button onClick={() => { setReplyingToId(null); setReplyInput(''); }} style={{ background: 'transparent', border: '1px solid #2a2a2a', color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans", sans-serif', fontSize: 10, cursor: 'pointer', padding: '2px 8px' }}>Cancel</button>
+                                      <button onClick={() => submitReply(comment.id)} disabled={!replyInput.trim()} style={{ background: replyInput.trim() ? '#008c44' : '#1a1a1a', border: '1px solid #2a2a2a', color: replyInput.trim() ? '#fff' : 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', fontSize: 10, cursor: replyInput.trim() ? 'pointer' : 'default', padding: '2px 8px' }}>Reply</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => { setReplyingToId(comment.id); setReplyInput(''); }}
+                                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.25)', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', gap: 4 }}
+                                  >
+                                    ↳ Reply
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: '"Saans", sans-serif' }}>{comment.author}</span>
-                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans Mono", monospace', marginLeft: 6 }}>
-                              Slide {slideIdx + 1}
-                            </span>
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: '"Saans", sans-serif', lineHeight: 1.5, paddingLeft: 23 }}>
-                          {comment.text}
-                        </div>
+                        );
+                      })}
+
+                      {/* Show/hide resolved toggle */}
+                      {resolvedCount > 0 && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setComments((prev) => prev.filter((c) => c.id !== comment.id)); }}
-                          style={{ position: 'absolute', top: 7, right: 7, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 11, padding: '2px 4px', lineHeight: 1 }}
-                          title="Delete"
+                          onClick={() => setShowResolved((v) => !v)}
+                          style={{ background: 'transparent', border: '1px solid #2a2a2a', color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '5px 12px', width: '100%', textAlign: 'center' }}
                         >
-                          ✕
+                          {showResolved ? `Hide resolved (${resolvedCount})` : `Show resolved (${resolvedCount})`}
                         </button>
-                      </div>
-                    );
-                  })
-                )}
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Footer hint */}
