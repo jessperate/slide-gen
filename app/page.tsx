@@ -11,6 +11,7 @@ import OnboardingScreen from '@/components/OnboardingScreen';
 import AirOpsLogo from '@/components/AirOpsLogo';
 import { renderSlide, LogoLayer } from '@/components/SlideCanvas';
 import { LogoOverlay } from '@/lib/slides';
+import RemixBar from '@/components/RemixBar';
 
 const STORAGE_KEY = 'slidegen-current-deck';
 const SAVED_KEY = 'slidegen-saved-deck';
@@ -763,8 +764,8 @@ export default function SlideGenPage() {
         <div
           ref={canvasContainerRef}
           style={{
-            gridArea: 'canvas', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', background: '#1a1a1a', overflow: 'hidden', position: 'relative',
+            gridArea: 'canvas', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 12, background: '#1a1a1a', overflow: 'hidden', position: 'relative',
             cursor: commentMode ? 'crosshair' : 'default',
           }}
         >
@@ -915,6 +916,11 @@ export default function SlideGenPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Remix bar */}
+          {activeSlide && (
+            <RemixBar slide={activeSlide} onRemix={updateActiveSlide} />
           )}
         </div>
 
