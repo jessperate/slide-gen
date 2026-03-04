@@ -1,9 +1,12 @@
 import { toPng } from 'html-to-image';
 import { flushSync } from 'react-dom';
+import React from 'react';
 import { SlideData } from './slides';
 
 const SLIDE_W = 1280;
 const SLIDE_H = 720;
+// Render slides at 3× physical size so text/vectors are crisp in the capture
+const EXPORT_SCALE = 3;
 
 export async function exportToPdf(
   slides: SlideData[],
@@ -13,14 +16,14 @@ export async function exportToPdf(
   const { createRoot } = await import('react-dom/client');
   const { default: jsPDF } = await import('jspdf');
 
-  // z-index: -1 keeps it rendered but behind all page content (invisible to user)
+  // Container is EXPORT_SCALE × the slide dimensions so the scaled content fits exactly
   const container = document.createElement('div');
   container.style.cssText = `
     position: fixed;
     top: 0;
     left: 0;
-    width: ${SLIDE_W}px;
-    height: ${SLIDE_H}px;
+    width: ${SLIDE_W * EXPORT_SCALE}px;
+    height: ${SLIDE_H * EXPORT_SCALE}px;
     overflow: hidden;
     pointer-events: none;
     z-index: -1;
@@ -34,17 +37,27 @@ export async function exportToPdf(
     for (let i = 0; i < slides.length; i++) {
       onProgress?.(i + 1, slides.length);
 
-      // flushSync forces React to commit synchronously before we capture
       const el = renderSlide(slides[i], false);
-      if (el) flushSync(() => root.render(el));
+      if (el) {
+        // Wrap in a scale wrapper so the 1280×720 slide fills the 3× container
+        flushSync(() =>
+          root.render(
+            React.createElement(
+              'div',
+              { style: { transform: `scale(${EXPORT_SCALE})`, transformOrigin: 'top left', width: SLIDE_W, height: SLIDE_H } },
+              el,
+            ),
+          ),
+        );
+      }
 
       // Small delay for images / web fonts to finish loading
-      await new Promise<void>((r) => setTimeout(r, 300));
+      await new Promise<void>((r) => setTimeout(r, 400));
 
       const dataUrl = await toPng(container, {
-        width: SLIDE_W,
-        height: SLIDE_H,
-        pixelRatio: 2,
+        width: SLIDE_W * EXPORT_SCALE,
+        height: SLIDE_H * EXPORT_SCALE,
+        pixelRatio: 1,
         skipFonts: false,
       });
 
