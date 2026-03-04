@@ -1,4 +1,4 @@
-export type ColorMode = 'green' | 'blue' | 'pink' | 'yellow';
+export type ColorMode = 'green' | 'blue' | 'pink' | 'yellow' | 'white';
 
 export interface SlideTheme {
   id: ColorMode;
@@ -116,6 +116,30 @@ export const THEMES: Record<ColorMode, SlideTheme> = {
       { bg: '#2A1800', text: '#FFD966' },
       { bg: '#C87000', text: '#ffffff' },
       { bg: '#FFD966', text: '#2A1800' },
+    ],
+  },
+  white: {
+    id: 'white',
+    label: 'White Paper',
+    darkBg: '#111111',
+    lightBg: '#FFFFFF',
+    accent: '#111111',
+    accentMid: '#555555',
+    stroke: '#E0E0E0',
+    textOnDark: '#FFFFFF',
+    textOnLight: '#111111',
+    bodyOnLight: '#333333',
+    mutedOnLight: '#888888',
+    mutedOnDark: 'rgba(255,255,255,0.4)',
+    logoOnDark: '#FFFFFF',
+    logoOnLight: '#111111',
+    agendaLeftBg: '#F0F0F0',
+    agendaDotPattern: 'rgba(0,0,0,0.08)',
+    heroDotPattern: 'rgba(0,0,0,0.06)',
+    diagramColBgs: [
+      { bg: '#111111', text: '#FFFFFF' },
+      { bg: '#555555', text: '#FFFFFF' },
+      { bg: '#E8E8E8', text: '#111111' },
     ],
   },
 };

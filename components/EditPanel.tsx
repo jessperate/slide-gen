@@ -1294,7 +1294,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
 
           {/* Per-slide color override */}
           <label style={labelStyle}>This Slide</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
             {/* "Default" option */}
             <button
               onClick={() => onSlideColorModeChange(undefined)}

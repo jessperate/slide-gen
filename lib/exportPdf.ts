@@ -17,13 +17,14 @@ export async function exportToPdf(
   const container = document.createElement('div');
   container.style.cssText = `
     position: fixed;
-    top: -9999px;
-    left: -9999px;
+    top: 0;
+    left: 0;
     width: ${SLIDE_W}px;
     height: ${SLIDE_H}px;
     overflow: hidden;
     pointer-events: none;
-    z-index: -1;
+    visibility: hidden;
+    z-index: 9999;
   `;
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -38,7 +39,7 @@ export async function exportToPdf(
       await new Promise<void>((resolve) => {
         const el = renderSlide(slides[i], false);
         if (el) root.render(el);
-        setTimeout(resolve, 200);
+        setTimeout(resolve, 400);
       });
 
       const dataUrl = await toPng(container, {

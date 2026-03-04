@@ -45,6 +45,7 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error('Stipple error:', err);
-    return NextResponse.json({ error: 'Failed to apply stipple effect' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg || 'Failed to apply stipple effect' }, { status: 500 });
   }
 }
