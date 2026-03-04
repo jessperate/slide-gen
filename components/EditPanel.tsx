@@ -112,7 +112,6 @@ function Field({
   );
 }
 
-const GIPHY_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY ?? 'dcf93d4f15744aa9b5b3d74c8e09a39b';
 
 interface GifResult {
   id: string;
@@ -394,11 +393,14 @@ function GiphySearch({ onSelect }: { onSelect: (url: string) => void }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(
-        `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=12&rating=g`
-      );
+      const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setResults(data.data ?? []);
+      if (!res.ok) {
+        setError(data.error || 'Giphy search failed');
+        setResults([]);
+      } else {
+        setResults(data.data ?? []);
+      }
     } catch {
       setError('Search failed');
     } finally {
