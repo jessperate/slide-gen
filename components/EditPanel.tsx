@@ -850,9 +850,42 @@ function RemixIconPicker({ value, onChange }: { value: string; onChange: (icon: 
   );
 }
 
+const IMAGE_NATIVE_TYPES = new Set(['cover', 'quote', 'big-quote', 'two-col-media']);
+
 export default function EditPanel({ slide, onChange, colorMode, onColorModeChange, slideColorMode, onSlideColorModeChange }: Props) {
+  const [remixingForImage, setRemixingForImage] = useState(false);
+
   const update = (patch: Partial<SlideData>) => {
     onChange({ ...slide, ...patch } as SlideData);
+  };
+
+  const handleAddImage = async (url: string | undefined) => {
+    if (!url) {
+      // Removing image — just clear it regardless of type
+      update({ imageUrl: undefined } as Partial<SlideData>);
+      return;
+    }
+    if (IMAGE_NATIVE_TYPES.has(slide.type)) {
+      update({ imageUrl: url } as Partial<SlideData>);
+      return;
+    }
+    // Slide doesn't natively support images — remix to two-col-media first
+    setRemixingForImage(true);
+    try {
+      const res = await fetch('/api/ai-remix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slide, targetType: 'two-col-media' }),
+      });
+      const data = await res.json();
+      const remixed = data.slide ?? { ...slide, type: 'two-col-media' };
+      onChange({ ...remixed, imageUrl: url } as SlideData);
+    } catch {
+      // Fallback: just jam imageUrl on the existing slide
+      update({ imageUrl: url } as Partial<SlideData>);
+    } finally {
+      setRemixingForImage(false);
+    }
   };
 
   const panelContent = () => {
@@ -1644,14 +1677,26 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
           </button>
         </div>
 
-        {/* Image upload + Giphy (for slides that support it) */}
-        {(slide.type === 'cover' || slide.type === 'quote' || slide.type === 'big-quote' || slide.type === 'two-col-media') && (
+        {/* Image upload + Giphy — available on all slide types */}
+        {remixingForImage ? (
+          <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+            <label style={labelStyle}>Image</label>
+            <div style={{ fontSize: 12, color: 'rgba(0,255,100,0.7)', fontFamily: '"Saans", sans-serif', padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>✦</span> Reformatting slide to include image…
+            </div>
+          </div>
+        ) : (
           <>
+            {!IMAGE_NATIVE_TYPES.has(slide.type) && (
+              <div style={{ marginBottom: 8, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans", sans-serif', lineHeight: 1.5 }}>
+                Adding an image will reformat this slide to a two-column layout.
+              </div>
+            )}
             <ImageSection
               imageUrl={(slide as { imageUrl?: string }).imageUrl}
-              onUpdate={(url) => update({ imageUrl: url } as Partial<SlideData>)}
+              onUpdate={handleAddImage}
             />
-            <GiphySearch onSelect={(url) => update({ imageUrl: url } as Partial<SlideData>)} />
+            <GiphySearch onSelect={(url) => handleAddImage(url)} />
           </>
         )}
 
