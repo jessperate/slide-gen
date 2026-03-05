@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function TwoColMediaSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   const hasImage = !!data.imageUrl;
 
   return (
@@ -99,7 +100,7 @@ export default function TwoColMediaSlide({ data, interactive = true, onUpdate, t
           onBlur={(e) => onUpdate?.({ ...data, body: e.currentTarget.textContent ?? '' })}
           style={{
             fontFamily: '"Saans", sans-serif',
-            fontSize: 17,
+            fontSize: Math.round(17 * s),
             fontWeight: 400,
             color: theme.bodyOnLight,
             lineHeight: 1.7,

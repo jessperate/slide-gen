@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ContentSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   return (
     <div
       style={{
@@ -113,7 +114,7 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 18,
+                fontSize: Math.round(18 * s),
                 fontWeight: 600,
                 color: theme.textOnLight,
                 marginBottom: 16,
@@ -134,7 +135,7 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 15,
+                fontSize: Math.round(15 * s),
                 fontWeight: 400,
                 color: theme.bodyOnLight,
                 lineHeight: 1.65,

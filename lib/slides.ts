@@ -19,6 +19,7 @@ export interface CoverSlideData {
   imageX?: number;
   imageY?: number;
   imageZoom?: number;
+  textScale?: number;
 }
 
 export interface SectionSlideData {
@@ -29,6 +30,7 @@ export interface SectionSlideData {
   headline: string;
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface DiagramColumn {
@@ -44,6 +46,7 @@ export interface DiagramSlideData {
   columns: DiagramColumn[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface Metric {
@@ -60,6 +63,7 @@ export interface StatsSlideData {
   metrics: Metric[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface ContentColumn {
@@ -74,6 +78,7 @@ export interface ContentSlideData {
   columns: ContentColumn[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface BackCoverSlideData {
@@ -83,6 +88,7 @@ export interface BackCoverSlideData {
   url: string;
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface HeroSlideData {
@@ -92,6 +98,7 @@ export interface HeroSlideData {
   customerLogos: string[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface AgendaSlideData {
@@ -101,6 +108,7 @@ export interface AgendaSlideData {
   items: string[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface QuoteSlideData {
@@ -114,6 +122,7 @@ export interface QuoteSlideData {
   imageX?: number;
   imageY?: number;
   imageZoom?: number;
+  textScale?: number;
 }
 
 export interface ThreeColItem {
@@ -129,6 +138,7 @@ export interface ThreeColSlideData {
   columns: ThreeColItem[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface FeatureListItem {
@@ -144,6 +154,7 @@ export interface FeatureListSlideData {
   items: FeatureListItem[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface CustomerMetric {
@@ -161,6 +172,7 @@ export interface CustomerStorySlideData {
   metrics: CustomerMetric[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface ChecklistItem {
@@ -176,6 +188,7 @@ export interface ChecklistSlideData {
   items: ChecklistItem[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 // ── New slide types ──────────────────────────────────────────────────────────
@@ -192,6 +205,7 @@ export interface BigQuoteSlideData {
   imageZoom?: number;
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface TwoColMediaSlideData {
@@ -206,6 +220,7 @@ export interface TwoColMediaSlideData {
   imageZoom?: number;
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface ContactCard {
@@ -223,6 +238,7 @@ export interface ContactSlideData {
   cards: ContactCard[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export interface TeamMember {
@@ -238,6 +254,7 @@ export interface TeamSlideData {
   members: TeamMember[];
   hideLogo?: boolean;
   logos?: LogoOverlay[];
+  textScale?: number;
 }
 
 export type SlideData =

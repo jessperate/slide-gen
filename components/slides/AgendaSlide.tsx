@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function AgendaSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   return (
     <div
       style={{
@@ -96,7 +97,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
               display: 'flex',
               alignItems: 'baseline',
               gap: 16,
-              marginBottom: 40,
+              marginBottom: Math.round(40 * s),
             }}
           >
             <div
@@ -121,7 +122,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 18,
+                fontSize: Math.round(18 * s),
                 fontWeight: 400,
                 color: theme.lightBg,
                 lineHeight: 1.4,

@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ChecklistSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   return (
     <div
       style={{
@@ -69,7 +70,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
           <div
             key={i}
             style={{
-              height: 88,
+              height: Math.round(88 * s),
               display: 'flex',
               alignItems: 'center',
               borderBottom: `1px solid ${theme.stroke}`,
@@ -113,11 +114,11 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 16,
+                fontSize: Math.round(16 * s),
                 fontWeight: 600,
                 color: theme.textOnLight,
                 marginLeft: 16,
-                width: 240,
+                width: Math.round(240 * s),
                 flexShrink: 0,
                 lineHeight: 1.3,
                 outline: 'none',
@@ -139,7 +140,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 14,
+                fontSize: Math.round(14 * s),
                 fontWeight: 400,
                 color: theme.mutedOnLight,
                 lineHeight: 1.5,

@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ThreeColSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   return (
     <div
       style={{
@@ -115,7 +116,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 18,
+                fontSize: Math.round(18 * s),
                 fontWeight: 500,
                 color: theme.textOnLight,
                 marginBottom: 8,
@@ -149,7 +150,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 14,
+                fontSize: Math.round(14 * s),
                 fontWeight: 400,
                 color: theme.mutedOnLight,
                 lineHeight: 1.6,

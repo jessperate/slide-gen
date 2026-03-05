@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function DiagramSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   return (
     <div
       style={{
@@ -127,7 +128,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                   }}
                   style={{
                     fontFamily: '"Serrif VF", serif',
-                    fontSize: 32,
+                    fontSize: Math.round(32 * s),
                     fontWeight: 400,
                     color: colTheme.text,
                     letterSpacing: '-0.01em',
@@ -161,7 +162,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                   }}
                   style={{
                     fontFamily: '"Saans", sans-serif',
-                    fontSize: 16,
+                    fontSize: Math.round(16 * s),
                     fontWeight: 400,
                     color: theme.bodyOnLight,
                     lineHeight: 1.65,

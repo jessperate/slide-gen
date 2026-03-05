@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function FeatureListSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
+  const s = data.textScale ?? 1;
   const items = data.items.slice(0, 5);
 
   return (
@@ -71,7 +72,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate, t
           <div
             key={i}
             style={{
-              height: 96,
+              height: Math.round(96 * s),
               display: 'flex',
               alignItems: 'center',
               borderBottom: `1px solid ${theme.stroke}`,
@@ -102,10 +103,10 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate, t
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 16,
+                fontSize: Math.round(16 * s),
                 fontWeight: 600,
                 color: theme.textOnLight,
-                width: 220,
+                width: Math.round(220 * s),
                 flexShrink: 0,
                 marginLeft: 16,
                 lineHeight: 1.3,
@@ -128,7 +129,7 @@ export default function FeatureListSlide({ data, interactive = true, onUpdate, t
               }}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: 14,
+                fontSize: Math.round(14 * s),
                 fontWeight: 400,
                 color: theme.mutedOnLight,
                 lineHeight: 1.5,

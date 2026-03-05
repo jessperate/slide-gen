@@ -1700,6 +1700,38 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
           </>
         )}
 
+        {/* Text size */}
+        <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+          <label style={labelStyle}>Text Size</label>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {([0.85, 1, 1.35, 1.7] as const).map((scale, i) => {
+              const labels = ['S', 'M', 'L', 'XL'];
+              const current = (slide as { textScale?: number }).textScale ?? 1;
+              const active = Math.abs(current - scale) < 0.05;
+              return (
+                <button
+                  key={scale}
+                  onClick={() => update({ textScale: scale } as Partial<SlideData>)}
+                  style={{
+                    flex: 1,
+                    background: active ? 'rgba(0,140,68,0.15)' : '#1a1a1a',
+                    border: `1px solid ${active ? '#008c44' : '#2a2a2a'}`,
+                    color: active ? '#008c44' : 'rgba(255,255,255,0.5)',
+                    fontFamily: '"Saans", sans-serif',
+                    fontSize: 11 + i * 1.5,
+                    cursor: 'pointer',
+                    padding: '6px 4px',
+                    transition: 'all 0.15s',
+                    fontWeight: active ? 600 : 400,
+                  }}
+                >
+                  {labels[i]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Brandfetch logo overlay */}
         <BrandfetchSection
           logos={(slide as { logos?: LogoOverlay[] }).logos ?? []}
