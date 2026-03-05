@@ -330,13 +330,32 @@ interface RemixBarProps {
 export default function RemixBar({ slide, originalSlide, onRemix, onRevert }: RemixBarProps) {
   const options = REMIX_OPTIONS[slide.type] ?? [];
   const [hovered, setHovered] = useState<string | null>(null);
+  const [loadingType, setLoadingType] = useState<string | null>(null);
 
   if (options.length === 0) return null;
+
+  const handleRemix = async (targetType: string) => {
+    if (loadingType) return;
+    setLoadingType(targetType);
+    try {
+      const res = await fetch('/api/ai-remix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slide, targetType }),
+      });
+      const data = await res.json();
+      if (data.slide) onRemix(data.slide);
+      else onRemix(remixToType(slide, targetType)); // fallback
+    } catch {
+      onRemix(remixToType(slide, targetType)); // fallback on network error
+    } finally {
+      setLoadingType(null);
+    }
+  };
 
   const btnBase: React.CSSProperties = {
     background: 'transparent',
     border: '1px solid #2a2a2a',
-    cursor: 'pointer',
     padding: '6px 8px 5px',
     display: 'flex',
     flexDirection: 'column',
@@ -388,11 +407,11 @@ export default function RemixBar({ slide, originalSlide, onRemix, onRevert }: Re
             onMouseLeave={() => setHovered(null)}
             style={{
               ...btnBase,
+              cursor: 'pointer',
               border: `1px solid ${hovered === '__original__' ? '#00ff64' : '#3a3a3a'}`,
               background: hovered === '__original__' ? 'rgba(0,255,100,0.08)' : 'rgba(255,255,255,0.04)',
             }}
           >
-            {/* Mini "undo" schematic */}
             <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
               <rect width={W} height={H} fill="#111" />
               <text x={44} y={24} fontSize={22} fill={hovered === '__original__' ? '#00ff64' : 'rgba(255,255,255,0.4)'} textAnchor="middle">↩</text>
@@ -408,29 +427,45 @@ export default function RemixBar({ slide, originalSlide, onRemix, onRevert }: Re
       )}
 
       {/* Layout options */}
-      {options.map((opt) => (
-        <button
-          key={opt.type}
-          onClick={() => onRemix(remixToType(slide, opt.type))}
-          onMouseEnter={() => setHovered(opt.type)}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...btnBase,
-            border: `1px solid ${hovered === opt.type ? 'rgba(0,255,100,0.5)' : '#252525'}`,
-            background: hovered === opt.type ? 'rgba(0,255,100,0.06)' : 'transparent',
-          }}
-        >
-          <Schematic type={opt.type} hovered={hovered === opt.type} />
-          <span style={{
-            fontSize: 10,
-            fontFamily: '"Saans", sans-serif',
-            color: hovered === opt.type ? '#F8FFFA' : 'rgba(255,255,255,0.4)',
-            transition: 'color 0.15s',
-          }}>
-            {opt.label}
-          </span>
-        </button>
-      ))}
+      {options.map((opt) => {
+        const isLoading = loadingType === opt.type;
+        const isDisabled = !!loadingType;
+        return (
+          <button
+            key={opt.type}
+            onClick={() => handleRemix(opt.type)}
+            onMouseEnter={() => !isDisabled && setHovered(opt.type)}
+            onMouseLeave={() => setHovered(null)}
+            disabled={isDisabled}
+            style={{
+              ...btnBase,
+              cursor: isDisabled ? 'default' : 'pointer',
+              border: `1px solid ${hovered === opt.type ? 'rgba(0,255,100,0.5)' : '#252525'}`,
+              background: isLoading ? 'rgba(0,255,100,0.08)' : hovered === opt.type ? 'rgba(0,255,100,0.06)' : 'transparent',
+              opacity: isDisabled && !isLoading ? 0.4 : 1,
+              position: 'relative',
+            }}
+          >
+            {isLoading ? (
+              <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                <rect width={W} height={H} fill="#0d1a0f" />
+                <text x={44} y={30} fontSize={11} fill="rgba(0,255,100,0.7)" textAnchor="middle" fontFamily="monospace">✦ AI…</text>
+                <rect x={0} y={H - 4} width={W} height={4} fill="rgba(0,255,100,0.4)" />
+              </svg>
+            ) : (
+              <Schematic type={opt.type} hovered={hovered === opt.type} />
+            )}
+            <span style={{
+              fontSize: 10,
+              fontFamily: '"Saans", sans-serif',
+              color: isLoading ? '#00ff64' : hovered === opt.type ? '#F8FFFA' : 'rgba(255,255,255,0.4)',
+              transition: 'color 0.15s',
+            }}>
+              {isLoading ? 'Remixing…' : opt.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
