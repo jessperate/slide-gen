@@ -28,12 +28,32 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [contextUrl, setContextUrl] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [mode, setMode] = useState<'generate' | 'reformat'>('generate');
+  const [pdfData, setPdfData] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState('');
+  const [pdfDragging, setPdfDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
+
+  const handlePdfFile = (file: File | null) => {
+    if (!file || file.type !== 'application/pdf') return;
+    if (file.size > 15 * 1024 * 1024) {
+      setError('PDF must be under 15 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setPdfData(dataUrl);
+      setPdfName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleImageFiles = (files: FileList | null) => {
     if (!files) return;
@@ -54,6 +74,26 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   };
 
   const handleGenerate = async () => {
+    if (mode === 'reformat') {
+      if (!pdfData) return;
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch('/api/reformat-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pdfData, audience, tone }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.slides) throw new Error(data.error || 'Failed');
+        onGenerate(data.slides);
+      } catch {
+        setError('Something went wrong — please try again.');
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!topic.trim()) return;
     setLoading(true);
     setError('');
@@ -84,6 +124,8 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
       handleGenerate();
     }
   };
+
+  const canSubmit = mode === 'reformat' ? !!pdfData : !!topic.trim();
 
   return (
     <div
@@ -116,6 +158,32 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
           backdropFilter: 'blur(8px)',
         }}
       >
+        {/* Mode toggle */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          {(['generate', 'reformat'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: mode === m ? '2px solid rgba(0,255,100,0.7)' : '2px solid transparent',
+                padding: '0 0 10px 0',
+                marginRight: 24,
+                marginBottom: -1,
+                cursor: 'pointer',
+                fontFamily: '"Saans", sans-serif',
+                fontSize: 13,
+                fontWeight: mode === m ? 600 : 400,
+                color: mode === m ? 'rgba(0,255,100,0.9)' : 'rgba(255,255,255,0.35)',
+                transition: 'color 0.15s',
+              }}
+            >
+              {m === 'generate' ? 'Generate from scratch' : 'Reformat existing PDF'}
+            </button>
+          ))}
+        </div>
+
         {/* Heading */}
         <div
           style={{
@@ -128,7 +196,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             marginBottom: 8,
           }}
         >
-          What's your presentation about?
+          {mode === 'generate' ? "What's your presentation about?" : 'Upload your existing deck'}
         </div>
         <div
           style={{
@@ -139,39 +207,118 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             lineHeight: 1.5,
           }}
         >
-          Describe your topic and we'll build a full deck with a narrative arc.
+          {mode === 'generate'
+            ? "Describe your topic and we'll build a full deck with a narrative arc."
+            : "We'll extract your content and reformat it in AirOps brand style."}
         </div>
 
-        {/* Topic textarea */}
-        <textarea
-          ref={textareaRef}
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="e.g. How AirOps helps B2B SaaS companies scale content without headcount"
-          rows={3}
-          style={{
-            width: '100%',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 0,
-            color: '#ffffff',
-            fontFamily: '"Saans", sans-serif',
-            fontSize: 15,
-            lineHeight: 1.5,
-            padding: '14px 16px',
-            resize: 'none',
-            outline: 'none',
-            marginBottom: 16,
-            boxSizing: 'border-box',
-            transition: 'border-color 0.15s',
-          }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.4)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
-        />
+        {/* Topic textarea OR PDF upload */}
+        {mode === 'generate' ? (
+          <textarea
+            ref={textareaRef}
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="e.g. How AirOps helps B2B SaaS companies scale content without headcount"
+            rows={3}
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 0,
+              color: '#ffffff',
+              fontFamily: '"Saans", sans-serif',
+              fontSize: 15,
+              lineHeight: 1.5,
+              padding: '14px 16px',
+              resize: 'none',
+              outline: 'none',
+              marginBottom: 16,
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.4)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
+          />
+        ) : (
+          <div style={{ marginBottom: 16 }}>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              style={{ display: 'none' }}
+              onChange={(e) => handlePdfFile(e.target.files?.[0] ?? null)}
+            />
+            {pdfData ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 16px',
+                  border: '1px solid rgba(0,255,100,0.3)',
+                  background: 'rgba(0,255,100,0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 18 }}>📄</span>
+                  <span style={{ fontFamily: '"Saans", sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>
+                    {pdfName}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setPdfData(null); setPdfName(''); }}
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.35)', fontSize: 14, padding: 0,
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => pdfInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setPdfDragging(true); }}
+                onDragLeave={() => setPdfDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setPdfDragging(false);
+                  handlePdfFile(e.dataTransfer.files?.[0] ?? null);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '32px 16px',
+                  border: `1px dashed ${pdfDragging ? 'rgba(0,255,100,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                  background: pdfDragging ? 'rgba(0,255,100,0.06)' : 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
+                onMouseEnter={(e) => { if (!pdfDragging) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,255,100,0.4)'; }}
+                onMouseLeave={(e) => { if (!pdfDragging) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              >
+                <span style={{ fontSize: 28, opacity: 0.5 }}>↑</span>
+                <span style={{ fontFamily: '"Saans", sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+                  Drop your PDF here or click to browse
+                </span>
+                <span style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+                  Max 15 MB
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Add context expander */}
-        <div style={{ marginBottom: 16 }}>
+        {/* Add context expander — generate mode only */}
+        <div style={{ marginBottom: 16, display: mode === 'reformat' ? 'none' : undefined }}>
           <button
             onClick={() => setContextOpen((o) => !o)}
             style={{
@@ -282,8 +429,8 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
           )}
         </div>
 
-        {/* Image upload expander */}
-        <div style={{ marginBottom: 16 }}>
+        {/* Image upload expander — generate mode only */}
+        <div style={{ marginBottom: 16, display: mode === 'reformat' ? 'none' : undefined }}>
           <button
             onClick={() => setImagesOpen((o) => !o)}
             style={{
@@ -451,15 +598,15 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
 
           <button
             onClick={handleGenerate}
-            disabled={loading || !topic.trim()}
+            disabled={loading || !canSubmit}
             style={{
-              background: topic.trim() && !loading ? '#00ff64' : 'rgba(0,255,100,0.2)',
+              background: canSubmit && !loading ? '#00ff64' : 'rgba(0,255,100,0.2)',
               border: 'none',
-              color: topic.trim() && !loading ? '#002910' : 'rgba(0,255,100,0.4)',
+              color: canSubmit && !loading ? '#002910' : 'rgba(0,255,100,0.4)',
               fontFamily: '"Saans", sans-serif',
               fontSize: 14,
               fontWeight: 600,
-              cursor: topic.trim() && !loading ? 'pointer' : 'default',
+              cursor: canSubmit && !loading ? 'pointer' : 'default',
               padding: '12px 28px',
               borderRadius: 0,
               transition: 'all 0.15s',
@@ -471,12 +618,12 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             {loading ? (
               <>
                 <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>◌</span>
-                Crafting your deck…
+                {mode === 'reformat' ? 'Reformatting your deck…' : 'Crafting your deck…'}
               </>
             ) : (
               <>
-                Generate deck
-                <span style={{ opacity: 0.6, fontSize: 11 }}>⌘↵</span>
+                {mode === 'reformat' ? 'Reformat deck' : 'Generate deck'}
+                {mode === 'generate' && <span style={{ opacity: 0.6, fontSize: 11 }}>⌘↵</span>}
               </>
             )}
           </button>
