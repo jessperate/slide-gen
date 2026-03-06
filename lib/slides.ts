@@ -270,6 +270,17 @@ export interface FullImageSlideData {
   textScale?: number;
 }
 
+export interface TableSlideData {
+  id: string;
+  type: 'table';
+  headline: string;
+  headers: string[];
+  rows: string[][];
+  hideLogo?: boolean;
+  logos?: LogoOverlay[];
+  textScale?: number;
+}
+
 export type SlideData =
   | CoverSlideData
   | SectionSlideData
@@ -288,7 +299,8 @@ export type SlideData =
   | TwoColMediaSlideData
   | ContactSlideData
   | TeamSlideData
-  | FullImageSlideData;
+  | FullImageSlideData
+  | TableSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -575,6 +587,17 @@ export const defaultSlideByType: Record<string, SlideData> = {
   'full-image': {
     id: 'new',
     type: 'full-image',
+  },
+  table: {
+    id: 'new',
+    type: 'table',
+    headline: 'Table headline',
+    headers: ['Column A', 'Column B', 'Column C'],
+    rows: [
+      ['Row 1, A', 'Row 1, B', 'Row 1, C'],
+      ['Row 2, A', 'Row 2, B', 'Row 2, C'],
+      ['Row 3, A', 'Row 3, B', 'Row 3, C'],
+    ],
   },
 };
 

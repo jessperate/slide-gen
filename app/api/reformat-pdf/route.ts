@@ -28,6 +28,7 @@ CONTENT TYPE MAPPING — for each input slide, choose the output type that best 
 | Large impactful quote with attribution | big-quote |
 | Customer case study with metrics | customer-story |
 | Text + image or screenshot side by side | two-col-media |
+| Data table, comparison matrix, feature grid, spec sheet | table |
 | Closing / thank you / contact / next steps | back-cover |
 
 CHARTS AND DATA VISUALIZATIONS:
@@ -61,6 +62,8 @@ SLIDE TYPES — return valid JSON matching these interfaces exactly:
 { type: "agenda", title: string, items: string[] }
   — 4–7 items
 { type: "two-col-media", eyebrow?: string, headline: string, body: string }
+{ type: "table", headline: string, headers: string[], rows: string[][] }
+  — 2–6 columns, up to 8 rows; use for any data table, comparison grid, or spec sheet
 { type: "back-cover", cta: string, url: string }
 
 RULES:
