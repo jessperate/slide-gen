@@ -257,6 +257,19 @@ export interface TeamSlideData {
   textScale?: number;
 }
 
+export interface FullImageSlideData {
+  id: string;
+  type: 'full-image';
+  imageUrl?: string;
+  imageX?: number;
+  imageY?: number;
+  imageZoom?: number;
+  caption?: string;
+  hideLogo?: boolean;
+  logos?: LogoOverlay[];
+  textScale?: number;
+}
+
 export type SlideData =
   | CoverSlideData
   | SectionSlideData
@@ -274,7 +287,8 @@ export type SlideData =
   | BigQuoteSlideData
   | TwoColMediaSlideData
   | ContactSlideData
-  | TeamSlideData;
+  | TeamSlideData
+  | FullImageSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -557,6 +571,10 @@ export const defaultSlideByType: Record<string, SlideData> = {
       { name: 'Team Member', role: 'Role, Title' },
       { name: 'Team Member', role: 'Role, Title' },
     ],
+  },
+  'full-image': {
+    id: 'new',
+    type: 'full-image',
   },
 };
 

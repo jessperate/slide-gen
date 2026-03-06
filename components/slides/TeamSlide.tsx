@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { TeamSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: TeamSlideData;
@@ -154,9 +155,7 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
       {/* Headline */}
       {data.headline !== undefined && (
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 40,
@@ -169,9 +168,7 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.headline}
-        </div>
+        />
       )}
 
       {/* Team grid */}
@@ -208,13 +205,11 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
 
             {/* Name */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(member.name ?? '', !!onUpdate, (html) => {
                 const members = [...data.members];
-                members[i] = { ...members[i], name: e.currentTarget.textContent ?? '' };
+                members[i] = { ...members[i], name: html };
                 onUpdate?.({ ...data, members });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 16,
@@ -224,19 +219,15 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {member.name}
-            </div>
+            />
 
             {/* Role */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(member.role ?? '', !!onUpdate, (html) => {
                 const members = [...data.members];
-                members[i] = { ...members[i], role: e.currentTarget.textContent ?? '' };
+                members[i] = { ...members[i], role: html };
                 onUpdate?.({ ...data, members });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans Mono", monospace',
                 fontSize: 10,
@@ -248,9 +239,7 @@ export default function TeamSlide({ data, interactive = true, onUpdate, theme = 
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {member.role}
-            </div>
+            />
           </div>
         ))}
       </div>

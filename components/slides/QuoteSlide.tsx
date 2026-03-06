@@ -3,6 +3,7 @@
 import { QuoteSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: QuoteSlideData;
@@ -98,9 +99,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate, theme =
         }}
       >
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, quote: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.quote ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, quote: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 40,
@@ -113,9 +112,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate, theme =
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.quote}
-        </div>
+        />
 
         {/* Attribution row */}
         <div
@@ -128,9 +125,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate, theme =
         >
           <div style={{ width: 32, height: 2, background: theme.accentMid }} />
           <div
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate?.({ ...data, attribution: e.currentTarget.textContent ?? '' })}
+            {...richTextProps(data.attribution ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, attribution: html }))}
             style={{
               fontFamily: '"Saans", sans-serif',
               fontSize: 14,
@@ -140,9 +135,7 @@ export default function QuoteSlide({ data, interactive = true, onUpdate, theme =
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
             }}
-          >
-            {data.attribution}
-          </div>
+          />
         </div>
       </div>
     </div>

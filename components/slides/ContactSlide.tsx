@@ -3,6 +3,7 @@
 import { ContactSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: ContactSlideData;
@@ -40,9 +41,7 @@ export default function ContactSlide({ data, interactive = true, onUpdate, theme
 
       {/* Headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           fontFamily: '"Serrif VF", serif',
           fontSize: 52,
@@ -55,9 +54,7 @@ export default function ContactSlide({ data, interactive = true, onUpdate, theme
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Contact cards */}
       <div style={{ display: 'flex', gap: 24 }}>
@@ -76,13 +73,11 @@ export default function ContactSlide({ data, interactive = true, onUpdate, theme
           >
             {/* Name */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(card.name ?? '', !!onUpdate, (html) => {
                 const cards = [...data.cards];
-                cards[i] = { ...cards[i], name: e.currentTarget.textContent ?? '' };
+                cards[i] = { ...cards[i], name: html };
                 onUpdate?.({ ...data, cards });
-              }}
+              })}
               style={{
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 28,
@@ -93,19 +88,15 @@ export default function ContactSlide({ data, interactive = true, onUpdate, theme
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {card.name}
-            </div>
+            />
 
             {/* Role */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(card.role ?? '', !!onUpdate, (html) => {
                 const cards = [...data.cards];
-                cards[i] = { ...cards[i], role: e.currentTarget.textContent ?? '' };
+                cards[i] = { ...cards[i], role: html };
                 onUpdate?.({ ...data, cards });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 13,
@@ -115,9 +106,7 @@ export default function ContactSlide({ data, interactive = true, onUpdate, theme
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {card.role}
-            </div>
+            />
 
             {/* Divider */}
             <div style={{ width: '100%', height: 1, background: theme.stroke, marginBottom: 24 }} />
@@ -204,9 +193,7 @@ function ContactRow({
         {icon}
       </div>
       <div
-        contentEditable={editable}
-        suppressContentEditableWarning
-        onBlur={(e) => onEdit(e.currentTarget.textContent ?? '')}
+        {...richTextProps(value ?? '', editable, (html) => onEdit(html))}
         style={{
           fontFamily: '"Saans", sans-serif',
           fontSize: 14,
@@ -216,9 +203,7 @@ function ContactRow({
           cursor: editable ? 'text' : 'default',
           flex: 1,
         }}
-      >
-        {value}
-      </div>
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { CustomerStorySlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: CustomerStorySlideData;
@@ -36,9 +37,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
 
       {/* Customer label */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, customerName: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.customerName ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, customerName: html }))}
         style={{
           position: 'absolute',
           top: 48,
@@ -52,9 +51,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.customerName}
-      </div>
+      />
 
       {/* Left column */}
       <div
@@ -71,9 +68,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
       >
         {/* Headline */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 36,
@@ -85,15 +80,11 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.headline}
-        </div>
+        />
 
         {/* Body */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, body: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.body ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, body: html }))}
           style={{
             fontFamily: '"Saans", sans-serif',
             fontSize: 14,
@@ -104,9 +95,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.body}
-        </div>
+        />
 
         {/* Attribution row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -127,9 +116,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
             {(data.attribution[0] || '?').toUpperCase()}
           </div>
           <div
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate?.({ ...data, attribution: e.currentTarget.textContent ?? '' })}
+            {...richTextProps(data.attribution ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, attribution: html }))}
             style={{
               fontFamily: '"Saans", sans-serif',
               fontSize: 13,
@@ -139,9 +126,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
             }}
-          >
-            {data.attribution}
-          </div>
+          />
         </div>
       </div>
 
@@ -185,13 +170,11 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
             }}
           >
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(metric.value ?? '', !!onUpdate, (html) => {
                 const next = [...data.metrics];
-                next[i] = { ...next[i], value: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], value: html };
                 onUpdate?.({ ...data, metrics: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 48,
@@ -203,17 +186,13 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {metric.value}
-            </div>
+            />
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(metric.label ?? '', !!onUpdate, (html) => {
                 const next = [...data.metrics];
-                next[i] = { ...next[i], label: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], label: html };
                 onUpdate?.({ ...data, metrics: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 13,
@@ -223,9 +202,7 @@ export default function CustomerStorySlide({ data, interactive = true, onUpdate,
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {metric.label}
-            </div>
+            />
           </div>
         ))}
       </div>

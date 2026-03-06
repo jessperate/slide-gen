@@ -3,6 +3,7 @@
 import { DiagramSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: DiagramSlideData;
@@ -51,12 +52,10 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
         }}
       >
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
-            fontSize: 44,
+            fontSize: Math.round(44 * s),
             fontWeight: 400,
             color: theme.textOnLight,
             letterSpacing: '-0.02em',
@@ -64,9 +63,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.headline}
-        </div>
+        />
       </div>
 
       {/* Full-height columns — below headline */}
@@ -119,13 +116,11 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
 
                 {/* Column header */}
                 <div
-                  contentEditable={!!onUpdate}
-                  suppressContentEditableWarning
-                  onBlur={(e) => {
+                  {...richTextProps(col.header ?? '', !!onUpdate, (html) => {
                     const next = [...data.columns];
-                    next[i] = { ...next[i], header: e.currentTarget.textContent ?? '' };
+                    next[i] = { ...next[i], header: html };
                     onUpdate?.({ ...data, columns: next });
-                  }}
+                  })}
                   style={{
                     fontFamily: '"Serrif VF", serif',
                     fontSize: Math.round(32 * s),
@@ -136,9 +131,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                     outline: 'none',
                     cursor: onUpdate ? 'text' : 'default',
                   }}
-                >
-                  {col.header}
-                </div>
+                />
               </div>
 
               {/* Body content area */}
@@ -153,13 +146,11 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                 }}
               >
                 <div
-                  contentEditable={!!onUpdate}
-                  suppressContentEditableWarning
-                  onBlur={(e) => {
+                  {...richTextProps(col.body ?? '', !!onUpdate, (html) => {
                     const next = [...data.columns];
-                    next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                    next[i] = { ...next[i], body: html };
                     onUpdate?.({ ...data, columns: next });
-                  }}
+                  })}
                   style={{
                     fontFamily: '"Saans", sans-serif',
                     fontSize: Math.round(16 * s),
@@ -169,20 +160,16 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                     outline: 'none',
                     cursor: onUpdate ? 'text' : 'default',
                   }}
-                >
-                  {col.body}
-                </div>
+                />
 
                 {/* Tag */}
                 {col.tag !== undefined && (
                   <div
-                    contentEditable={!!onUpdate}
-                    suppressContentEditableWarning
-                    onBlur={(e) => {
+                    {...richTextProps(col.tag ?? '', !!onUpdate, (html) => {
                       const next = [...data.columns];
-                      next[i] = { ...next[i], tag: e.currentTarget.textContent ?? '' };
+                      next[i] = { ...next[i], tag: html };
                       onUpdate?.({ ...data, columns: next });
-                    }}
+                    })}
                     style={{
                       display: 'inline-block',
                       alignSelf: 'flex-start',
@@ -199,9 +186,7 @@ export default function DiagramSlide({ data, interactive = true, onUpdate, theme
                       cursor: onUpdate ? 'text' : 'default',
                       marginTop: 24,
                     }}
-                  >
-                    {col.tag}
-                  </div>
+                  />
                 )}
               </div>
             </div>

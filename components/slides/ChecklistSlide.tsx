@@ -3,6 +3,7 @@
 import { ChecklistSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: ChecklistSlideData;
@@ -37,15 +38,13 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
 
       {/* Headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           position: 'absolute',
           top: 48,
           left: 64,
           fontFamily: '"Serrif VF", serif',
-          fontSize: 44,
+          fontSize: Math.round(44 * s),
           fontWeight: 400,
           color: theme.textOnLight,
           letterSpacing: '-0.02em',
@@ -53,9 +52,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Items */}
       <div
@@ -105,13 +102,11 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
 
             {/* Title */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(item.title ?? '', !!onUpdate, (html) => {
                 const next = [...data.items];
-                next[i] = { ...next[i], title: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], title: html };
                 onUpdate?.({ ...data, items: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(16 * s),
@@ -125,19 +120,15 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
                 cursor: onUpdate ? 'text' : 'default',
                 borderRadius: 2,
               }}
-            >
-              {item.title}
-            </div>
+            />
 
             {/* Body */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(item.body ?? '', !!onUpdate, (html) => {
                 const next = [...data.items];
-                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], body: html };
                 onUpdate?.({ ...data, items: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(14 * s),
@@ -150,9 +141,7 @@ export default function ChecklistSlide({ data, interactive = true, onUpdate, the
                 cursor: onUpdate ? 'text' : 'default',
                 borderRadius: 2,
               }}
-            >
-              {item.body}
-            </div>
+            />
           </div>
         ))}
       </div>

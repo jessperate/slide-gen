@@ -3,6 +3,7 @@
 import { StatsSlideData, METRIC_COLORS } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: StatsSlideData;
@@ -49,9 +50,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
       >
         {/* Headline */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 44,
@@ -63,9 +62,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.headline}
-        </div>
+        />
 
         {/* Thesis */}
         <div
@@ -75,9 +72,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
           }}
         >
           <div
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate?.({ ...data, thesis: e.currentTarget.textContent ?? '' })}
+            {...richTextProps(data.thesis ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, thesis: html }))}
             style={{
               fontFamily: '"Saans", sans-serif',
               fontSize: 15,
@@ -87,9 +82,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
             }}
-          >
-            {data.thesis}
-          </div>
+          />
         </div>
       </div>
 
@@ -132,13 +125,11 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
             }}
           >
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(metric.value ?? '', !!onUpdate, (html) => {
                 const next = [...data.metrics];
-                next[i] = { ...next[i], value: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], value: html };
                 onUpdate?.({ ...data, metrics: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Serrif VF", serif',
                 fontSize: 56,
@@ -150,17 +141,13 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {metric.value}
-            </div>
+            />
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(metric.label ?? '', !!onUpdate, (html) => {
                 const next = [...data.metrics];
-                next[i] = { ...next[i], label: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], label: html };
                 onUpdate?.({ ...data, metrics: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: 14,
@@ -170,9 +157,7 @@ export default function StatsSlide({ data, interactive = true, onUpdate, theme =
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {metric.label}
-            </div>
+            />
           </div>
         ))}
       </div>

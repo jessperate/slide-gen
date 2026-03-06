@@ -101,6 +101,22 @@ body {
   background: rgba(0, 140, 68, 0.04) !important;
 }
 
+/* Hyperlinks inside slides */
+[contenteditable] a,
+[contenteditable] a:visited {
+  color: #008c44;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: text; /* keep text cursor inside contentEditable */
+}
+/* In non-editable (present/export) mode, links are clickable */
+:not([contenteditable]) a {
+  color: #008c44;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 /* Print styles */
 @media print {
   body {

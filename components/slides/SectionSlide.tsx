@@ -3,6 +3,7 @@
 import { SectionSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: SectionSlideData;
@@ -42,17 +43,13 @@ export default function SectionSlide({ data, interactive = true, onUpdate, theme
         }}
       >
         <span
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, number: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.number ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, number: html }))}
           style={{
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
             borderRadius: 2,
           }}
-        >
-          {data.number}
-        </span>
+        />
         <span
           style={{
             width: 1,
@@ -62,17 +59,13 @@ export default function SectionSlide({ data, interactive = true, onUpdate, theme
           }}
         />
         <span
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, label: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.label ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, label: html }))}
           style={{
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
             borderRadius: 2,
           }}
-        >
-          {data.label}
-        </span>
+        />
       </div>
 
       {/* AirOps logo bottom-left */}
@@ -107,9 +100,7 @@ export default function SectionSlide({ data, interactive = true, onUpdate, theme
 
         {/* Headline */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: 56,
@@ -123,9 +114,7 @@ export default function SectionSlide({ data, interactive = true, onUpdate, theme
             cursor: onUpdate ? 'text' : 'default',
             borderRadius: 2,
           }}
-        >
-          {data.headline}
-        </div>
+        />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { NextResponse } from 'next/server';
 
 const client = new Anthropic();
@@ -53,7 +54,16 @@ RULES:
 - Quote: write it as a real person would say it — specific, first-person, outcome-focused.
 - Customer story: pick a plausible real company or a clearly fictional one; name them specifically.
 - Back-cover CTA: action verb + outcome ("See how [company/product] can [benefit]")
-- Return ONLY the JSON array. No explanation, no markdown fences, no other text.`;
+- Return ONLY the JSON array. No explanation, no markdown fences, no other text.
+
+IMAGE PLACEMENT (when images are provided):
+- The user has uploaded images shown after their message. Analyze each one.
+- Place images on slides where they are most relevant and visually impactful.
+- Use the placeholder "upload:0", "upload:1", etc. (0-indexed) as the imageUrl value.
+- Only use images on slide types that support imageUrl: cover, quote, big-quote, two-col-media, full-image.
+- Each image should be used at most once. You don't have to use all images.
+- If an image clearly shows a product, UI, or team — place it on a relevant content slide.
+- If an image is a headshot or portrait — prefer quote or big-quote slides.`;
 
 const MAX_CONTEXT_CHARS = 6000;
 
@@ -94,9 +104,15 @@ async function fetchUrlContent(url: string): Promise<{ text: string; images: str
   return { text, images };
 }
 
+interface UploadedImage { dataUrl: string; mediaType: string; }
+
 export async function POST(request: Request) {
   try {
-    const { topic, audience, tone, context, contextUrl } = await request.json();
+    const { topic, audience, tone, context, contextUrl, images } = await request.json() as {
+      topic: string; audience?: string; tone?: string;
+      context?: string; contextUrl?: string;
+      images?: UploadedImage[];
+    };
 
     let additionalContext = '';
     let contextImages: string[] = [];
@@ -116,17 +132,36 @@ export async function POST(request: Request) {
       ? `\n\nImages available from the context URL — you MAY use these as imageUrl values in cover, quote, big-quote, or two-col-media slides where they fit the content:\n${contextImages.map((u, i) => `${i + 1}. ${u}`).join('\n')}`
       : '';
 
+    const uploadHint = images && images.length > 0
+      ? `\n\nThe user has uploaded ${images.length} image(s) shown below. Analyze them and place using "upload:0", "upload:1" etc. as imageUrl values on the most relevant slides.`
+      : '';
+
     const userMessage = `Create a presentation deck about: "${topic}"
 Audience: ${audience || 'business professionals'}
-Tone: ${tone || 'persuasive and clear'}${additionalContext ? `\n\nAdditional context for the deck:\n${additionalContext}` : ''}${imageHint}
+Tone: ${tone || 'persuasive and clear'}${additionalContext ? `\n\nAdditional context for the deck:\n${additionalContext}` : ''}${imageHint}${uploadHint}
 
 Return a JSON array of 9–11 slides following the narrative arc in your instructions.`;
+
+    // Build message content — text first, then uploaded images as vision blocks
+    const userContent: MessageParam['content'] = [{ type: 'text', text: userMessage }];
+    if (images && images.length > 0) {
+      const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+      type AllowedMime = typeof ALLOWED[number];
+      for (const img of images) {
+        const mime = (ALLOWED.includes(img.mediaType as AllowedMime) ? img.mediaType : 'image/jpeg') as AllowedMime;
+        const base64 = img.dataUrl.replace(/^data:[^;]+;base64,/, '');
+        (userContent as Anthropic.ImageBlockParam[]).push({
+          type: 'image',
+          source: { type: 'base64', media_type: mime, data: base64 },
+        });
+      }
+    }
 
     const message = await client.messages.create({
       model: 'claude-opus-4-6',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
+      messages: [{ role: 'user', content: userContent }],
     });
 
     const text = message.content[0].type === 'text' ? message.content[0].text : '';
@@ -135,8 +170,18 @@ Return a JSON array of 9–11 slides following the narrative arc in your instruc
     const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const rawSlides = JSON.parse(clean);
 
+    // Replace "upload:N" placeholders with actual base64 data URLs
+    const uploadedDataUrls = (images ?? []).map((img) => img.dataUrl);
+    const slidesWithImages = rawSlides.map((s: Record<string, unknown>) => {
+      if (typeof s.imageUrl === 'string' && s.imageUrl.startsWith('upload:')) {
+        const idx = parseInt(s.imageUrl.slice(7), 10);
+        return { ...s, imageUrl: uploadedDataUrls[idx] ?? undefined };
+      }
+      return s;
+    });
+
     // Inject stable IDs
-    const slides = rawSlides.map((s: Record<string, unknown>, i: number) => ({
+    const slides = slidesWithImages.map((s: Record<string, unknown>, i: number) => ({
       ...s,
       id: `gen-${Date.now()}-${i}`,
     }));

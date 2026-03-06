@@ -3,6 +3,7 @@
 import { HeroSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: HeroSlideData;
@@ -42,9 +43,7 @@ export default function HeroSlide({ data, interactive = true, onUpdate, theme = 
 
       {/* Headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           position: 'absolute',
           top: '50%',
@@ -62,9 +61,7 @@ export default function HeroSlide({ data, interactive = true, onUpdate, theme = 
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Trusted by label */}
       <div
@@ -125,13 +122,11 @@ export default function HeroSlide({ data, interactive = true, onUpdate, theme = 
             />
             {onUpdate && (
               <div
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={(e) => {
+                {...richTextProps(domain ?? '', true, (html) => {
                   const next = [...data.customerLogos];
-                  next[i] = e.currentTarget.textContent ?? '';
+                  next[i] = html;
                   onUpdate?.({ ...data, customerLogos: next });
-                }}
+                })}
                 style={{
                   fontFamily: '"Saans Mono", monospace',
                   fontSize: 9,
@@ -141,9 +136,7 @@ export default function HeroSlide({ data, interactive = true, onUpdate, theme = 
                   cursor: 'text',
                   textAlign: 'center',
                 }}
-              >
-                {domain}
-              </div>
+              />
             )}
           </div>
         ))}

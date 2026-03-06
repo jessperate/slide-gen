@@ -3,6 +3,7 @@
 import { BackCoverSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: BackCoverSlideData;
@@ -40,9 +41,7 @@ export default function BackCoverSlide({ data, interactive = true, onUpdate, the
 
       {/* CTA */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, cta: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.cta ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, cta: html }))}
         style={{
           fontFamily: '"Saans", sans-serif',
           fontSize: 18,
@@ -56,15 +55,11 @@ export default function BackCoverSlide({ data, interactive = true, onUpdate, the
           cursor: onUpdate ? 'text' : 'default',
           borderRadius: 2,
         }}
-      >
-        {data.cta}
-      </div>
+      />
 
       {/* URL bottom-center */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, url: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.url ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, url: html }))}
         style={{
           position: 'absolute',
           bottom: 48,
@@ -81,9 +76,7 @@ export default function BackCoverSlide({ data, interactive = true, onUpdate, the
           cursor: onUpdate ? 'text' : 'default',
           borderRadius: 2,
         }}
-      >
-        {data.url}
-      </div>
+      />
     </div>
   );
 }

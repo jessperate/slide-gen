@@ -3,6 +3,7 @@
 import { AgendaSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: AgendaSlideData;
@@ -60,15 +61,13 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
 
       {/* Title */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, title: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.title ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, title: html }))}
         style={{
           position: 'absolute',
           top: 72,
           left: 528,
           fontFamily: '"Serrif VF", serif',
-          fontSize: 56,
+          fontSize: Math.round(56 * s),
           fontWeight: 400,
           color: theme.textOnDark,
           letterSpacing: '-0.02em',
@@ -77,9 +76,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
           cursor: onUpdate ? 'text' : 'default',
           borderRadius: 2,
         }}
-      >
-        {data.title}
-      </div>
+      />
 
       {/* Items */}
       <div
@@ -113,13 +110,11 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
               {String(i + 1).padStart(2, '0')}
             </div>
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(item ?? '', !!onUpdate, (html) => {
                 const next = [...data.items];
-                next[i] = e.currentTarget.textContent ?? '';
+                next[i] = html;
                 onUpdate?.({ ...data, items: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(18 * s),
@@ -130,9 +125,7 @@ export default function AgendaSlide({ data, interactive = true, onUpdate, theme 
                 cursor: onUpdate ? 'text' : 'default',
                 borderRadius: 2,
               }}
-            >
-              {item}
-            </div>
+            />
           </div>
         ))}
       </div>

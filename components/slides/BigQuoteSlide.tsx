@@ -3,6 +3,7 @@
 import { BigQuoteSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: BigQuoteSlideData;
@@ -66,9 +67,7 @@ export default function BigQuoteSlide({ data, interactive = true, onUpdate, them
 
         {/* Quote text */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, quote: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.quote ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, quote: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
             fontSize: hasImage ? 36 : 48,
@@ -80,18 +79,14 @@ export default function BigQuoteSlide({ data, interactive = true, onUpdate, them
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.quote}
-        </div>
+        />
 
         {/* Rule */}
         <div style={{ width: 40, height: 2, background: theme.accent, marginBottom: 20 }} />
 
         {/* Attribution */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, attribution: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.attribution ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, attribution: html }))}
           style={{
             fontFamily: '"Saans", sans-serif',
             fontSize: 15,
@@ -101,15 +96,11 @@ export default function BigQuoteSlide({ data, interactive = true, onUpdate, them
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.attribution}
-        </div>
+        />
 
         {data.role !== undefined && (
           <div
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate?.({ ...data, role: e.currentTarget.textContent ?? '' })}
+            {...richTextProps(data.role ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, role: html }))}
             style={{
               fontFamily: '"Saans", sans-serif',
               fontSize: 13,
@@ -118,9 +109,7 @@ export default function BigQuoteSlide({ data, interactive = true, onUpdate, them
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
             }}
-          >
-            {data.role}
-          </div>
+          />
         )}
       </div>
 

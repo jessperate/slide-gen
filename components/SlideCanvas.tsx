@@ -20,6 +20,7 @@ import BigQuoteSlide from './slides/BigQuoteSlide';
 import TwoColMediaSlide from './slides/TwoColMediaSlide';
 import ContactSlide from './slides/ContactSlide';
 import TeamSlide from './slides/TeamSlide';
+import FullImageSlide from './slides/FullImageSlide';
 
 interface Props {
   slide: SlideData;
@@ -184,6 +185,15 @@ export function renderSlide(
     case 'team':
       return (
         <TeamSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'full-image':
+      return (
+        <FullImageSlide
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}

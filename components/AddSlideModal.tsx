@@ -29,6 +29,7 @@ const slideTypes = [
   { type: 'two-col-media', label: '2 Col + Media' },
   { type: 'contact', label: 'Contact' },
   { type: 'team', label: 'Team' },
+  { type: 'full-image', label: 'Full Image' },
 ] as const;
 
 export default function AddSlideModal({ onAdd, onClose }: Props) {

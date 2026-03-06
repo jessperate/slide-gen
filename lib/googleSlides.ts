@@ -1,6 +1,7 @@
 // Google OAuth + Drive API upload → opens directly in Google Slides
 // Requires NEXT_PUBLIC_GOOGLE_CLIENT_ID env var
 
+
 declare global {
   interface Window {
     google: {
@@ -45,17 +46,32 @@ function getAccessToken(clientId: string): Promise<string> {
   });
 }
 
-async function uploadPptxToDrive(accessToken: string, pptxBlob: Blob): Promise<string> {
-  const metadata = {
-    name: 'AirOps Deck',
+
+/** Find or create a "SlideGen" folder in Drive. Does NOT cache — avoids stale folder errors. */
+async function getOrCreateFolder(accessToken: string): Promise<string> {
+  const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'SlideGen', mimeType: 'application/vnd.google-apps.folder' }),
+  });
+
+  if (!res.ok) {
+    // Non-fatal — just upload to root if folder creation fails
+    return '';
+  }
+  const data = await res.json();
+  return data.id as string;
+}
+
+async function uploadPptxToDrive(accessToken: string, pptxBlob: Blob, name: string, folderId: string): Promise<string> {
+  const metadata: Record<string, unknown> = {
+    name,
     mimeType: 'application/vnd.google-apps.presentation',
   };
+  if (folderId) metadata.parents = [folderId];
 
   const body = new FormData();
-  body.append(
-    'metadata',
-    new Blob([JSON.stringify(metadata)], { type: 'application/json' }),
-  );
+  body.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
   body.append('file', pptxBlob);
 
   const res = await fetch(
@@ -76,14 +92,22 @@ async function uploadPptxToDrive(accessToken: string, pptxBlob: Blob): Promise<s
   return data.id as string;
 }
 
-export async function openInGoogleSlides(pptxBlob: Blob): Promise<void> {
+/** Returns the Google Slides edit URL after uploading the PPTX blob to Drive. */
+export async function openInGoogleSlides(
+  pptxBlob: Blob,
+  deckTitle?: string,
+): Promise<string> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!clientId) {
     throw new Error('NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set');
   }
 
+  const name = deckTitle?.trim() || 'AirOps Deck';
+
   await loadGsi();
   const accessToken = await getAccessToken(clientId);
-  const fileId = await uploadPptxToDrive(accessToken, pptxBlob);
-  window.open(`https://docs.google.com/presentation/d/${fileId}/edit`, '_blank');
+  const folderId = await getOrCreateFolder(accessToken);
+  const fileId = await uploadPptxToDrive(accessToken, pptxBlob, name, folderId);
+
+  return `https://docs.google.com/presentation/d/${fileId}/edit`;
 }

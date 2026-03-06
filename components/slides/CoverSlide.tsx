@@ -3,6 +3,7 @@
 import { CoverSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: CoverSlideData;
@@ -60,9 +61,7 @@ export default function CoverSlide({ data, interactive = true, onUpdate, theme =
 
       {/* Eyebrow */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, eyebrow: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.eyebrow ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, eyebrow: html }))}
         style={{
           position: 'absolute',
           zIndex: 1,
@@ -80,9 +79,7 @@ export default function CoverSlide({ data, interactive = true, onUpdate, theme =
           cursor: onUpdate ? 'text' : 'default',
           borderRadius: 2,
         }}
-      >
-        {data.eyebrow}
-      </div>
+      />
 
       {/* Vertical hairline rule */}
       <div
@@ -99,9 +96,7 @@ export default function CoverSlide({ data, interactive = true, onUpdate, theme =
 
       {/* Headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           position: 'absolute',
           top: '50%',
@@ -121,16 +116,12 @@ export default function CoverSlide({ data, interactive = true, onUpdate, theme =
           cursor: onUpdate ? 'text' : 'default',
           borderRadius: 2,
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Subheadline */}
       {data.subheadline !== undefined && (
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, subheadline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.subheadline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, subheadline: html }))}
           style={{
             position: 'absolute',
             bottom: 80,
@@ -145,9 +136,7 @@ export default function CoverSlide({ data, interactive = true, onUpdate, theme =
             cursor: onUpdate ? 'text' : 'default',
             borderRadius: 2,
           }}
-        >
-          {data.subheadline}
-        </div>
+        />
       )}
 
       {/* AirOps logo */}

@@ -3,6 +3,7 @@
 import { ContentSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: ContentSlideData;
@@ -37,16 +38,14 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
 
       {/* Headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           position: 'absolute',
           top: 64,
           left: 64,
           right: 64,
           fontFamily: '"Serrif VF", serif',
-          fontSize: 44,
+          fontSize: Math.round(44 * s),
           fontWeight: 400,
           color: theme.textOnLight,
           letterSpacing: '-0.02em',
@@ -54,9 +53,7 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Divider */}
       <div
@@ -105,13 +102,11 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
               }}
             />
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(col.heading ?? '', !!onUpdate, (html) => {
                 const next = [...data.columns];
-                next[i] = { ...next[i], heading: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], heading: html };
                 onUpdate?.({ ...data, columns: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(18 * s),
@@ -122,17 +117,13 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {col.heading}
-            </div>
+            />
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(col.body ?? '', !!onUpdate, (html) => {
                 const next = [...data.columns];
-                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], body: html };
                 onUpdate?.({ ...data, columns: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(15 * s),
@@ -142,9 +133,7 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
                 outline: 'none',
                 cursor: onUpdate ? 'text' : 'default',
               }}
-            >
-              {col.body}
-            </div>
+            />
           </div>
         ))}
       </div>

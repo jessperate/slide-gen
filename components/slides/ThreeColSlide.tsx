@@ -3,6 +3,7 @@
 import { ThreeColSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: ThreeColSlideData;
@@ -37,15 +38,13 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
 
       {/* Page headline */}
       <div
-        contentEditable={!!onUpdate}
-        suppressContentEditableWarning
-        onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
         style={{
           position: 'absolute',
           top: 48,
           left: 64,
           fontFamily: '"Serrif VF", serif',
-          fontSize: 44,
+          fontSize: Math.round(44 * s),
           fontWeight: 400,
           color: theme.textOnLight,
           letterSpacing: '-0.02em',
@@ -53,9 +52,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
           outline: 'none',
           cursor: onUpdate ? 'text' : 'default',
         }}
-      >
-        {data.headline}
-      </div>
+      />
 
       {/* Full-width horizontal rule */}
       <div
@@ -107,13 +104,11 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
 
             {/* Column header */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(col.header ?? '', !!onUpdate, (html) => {
                 const next = [...data.columns];
-                next[i] = { ...next[i], header: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], header: html };
                 onUpdate?.({ ...data, columns: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(18 * s),
@@ -125,9 +120,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
                 cursor: onUpdate ? 'text' : 'default',
                 borderRadius: 2,
               }}
-            >
-              {col.header}
-            </div>
+            />
 
             {/* Rule below header */}
             <div
@@ -141,13 +134,11 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
 
             {/* Body */}
             <div
-              contentEditable={!!onUpdate}
-              suppressContentEditableWarning
-              onBlur={(e) => {
+              {...richTextProps(col.body ?? '', !!onUpdate, (html) => {
                 const next = [...data.columns];
-                next[i] = { ...next[i], body: e.currentTarget.textContent ?? '' };
+                next[i] = { ...next[i], body: html };
                 onUpdate?.({ ...data, columns: next });
-              }}
+              })}
               style={{
                 fontFamily: '"Saans", sans-serif',
                 fontSize: Math.round(14 * s),
@@ -158,9 +149,7 @@ export default function ThreeColSlide({ data, interactive = true, onUpdate, them
                 cursor: onUpdate ? 'text' : 'default',
                 borderRadius: 2,
               }}
-            >
-              {col.body}
-            </div>
+            />
           </div>
         ))}
       </div>

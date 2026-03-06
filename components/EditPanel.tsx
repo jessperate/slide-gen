@@ -1155,17 +1155,24 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               onChange={(v) => update({ title: v })}
             />
             {agendaSlide.items.map((item, i) => (
-              <Field
-                key={i}
-                label={`Item ${i + 1}`}
-                value={item}
-                onChange={(v) => {
-                  const items = [...agendaSlide.items];
-                  items[i] = v;
-                  update({ items });
-                }}
-              />
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <div style={{ flex: 1 }}>
+                  <Field
+                    label={`Item ${i + 1}`}
+                    value={item}
+                    onChange={(v) => {
+                      const items = [...agendaSlide.items];
+                      items[i] = v;
+                      update({ items });
+                    }}
+                  />
+                </div>
+                {agendaSlide.items.length > 1 && (
+                  <button onClick={() => { const items = agendaSlide.items.filter((_, j) => j !== i); update({ items }); }} style={{ marginTop: 22, background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, padding: '4px 2px', lineHeight: 1 }}>✕</button>
+                )}
+              </div>
             ))}
+            <button onClick={() => update({ items: [...agendaSlide.items, 'New item'] })} style={{ marginTop: 8, width: '100%', background: 'transparent', border: '1px dashed #333', color: '#666', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '6px', borderRadius: 4 }}>+ Add item</button>
           </>
         );
       }
@@ -1245,7 +1252,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             />
             {featureListSlide.items.map((item, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
-                <div style={groupLabelStyle}>Item {i + 1}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={groupLabelStyle}>Item {i + 1}</div>
+                  {featureListSlide.items.length > 1 && (
+                    <button onClick={() => { const items = featureListSlide.items.filter((_, j) => j !== i); update({ items }); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, padding: '2px 4px', lineHeight: 1 }}>✕</button>
+                  )}
+                </div>
                 <RemixIconPicker
                   value={item.icon}
                   onChange={(v) => {
@@ -1275,6 +1287,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
                 />
               </div>
             ))}
+            <button onClick={() => update({ items: [...featureListSlide.items, { icon: 'ri-star-line', title: 'New feature', body: '' }] })} style={{ marginTop: 8, width: '100%', background: 'transparent', border: '1px dashed #333', color: '#666', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '6px', borderRadius: 4 }}>+ Add item</button>
           </>
         );
       }
@@ -1343,7 +1356,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             />
             {checklistSlide.items.map((item, i) => (
               <div key={i} style={i === 0 ? {} : groupDividerStyle}>
-                <div style={groupLabelStyle}>Item {i + 1}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={groupLabelStyle}>Item {i + 1}</div>
+                  {checklistSlide.items.length > 1 && (
+                    <button onClick={() => { const items = checklistSlide.items.filter((_, j) => j !== i); update({ items }); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, padding: '2px 4px', lineHeight: 1 }}>✕</button>
+                  )}
+                </div>
                 <Field
                   label="Title"
                   value={item.title}
@@ -1380,6 +1398,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
                 </div>
               </div>
             ))}
+            <button onClick={() => update({ items: [...checklistSlide.items, { title: 'New item', body: '', checked: false }] })} style={{ marginTop: 8, width: '100%', background: 'transparent', border: '1px dashed #333', color: '#666', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '6px', borderRadius: 4 }}>+ Add item</button>
           </>
         );
       }

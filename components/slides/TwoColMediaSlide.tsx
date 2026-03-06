@@ -3,6 +3,7 @@
 import { TwoColMediaSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import { richTextProps } from '@/lib/richText';
 
 interface Props {
   data: TwoColMediaSlideData;
@@ -51,9 +52,7 @@ export default function TwoColMediaSlide({ data, interactive = true, onUpdate, t
         {/* Eyebrow */}
         {data.eyebrow !== undefined && (
           <div
-            contentEditable={!!onUpdate}
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate?.({ ...data, eyebrow: e.currentTarget.textContent ?? '' })}
+            {...richTextProps(data.eyebrow ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, eyebrow: html }))}
             style={{
               fontFamily: '"Saans Mono", monospace',
               fontSize: 11,
@@ -65,19 +64,15 @@ export default function TwoColMediaSlide({ data, interactive = true, onUpdate, t
               outline: 'none',
               cursor: onUpdate ? 'text' : 'default',
             }}
-          >
-            {data.eyebrow}
-          </div>
+          />
         )}
 
         {/* Headline */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, headline: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
           style={{
             fontFamily: '"Serrif VF", serif',
-            fontSize: 48,
+            fontSize: Math.round(48 * s),
             fontWeight: 400,
             color: theme.textOnLight,
             lineHeight: 1.15,
@@ -86,18 +81,14 @@ export default function TwoColMediaSlide({ data, interactive = true, onUpdate, t
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.headline}
-        </div>
+        />
 
         {/* Divider */}
         <div style={{ width: 40, height: 2, background: theme.accent, marginBottom: 24 }} />
 
         {/* Body */}
         <div
-          contentEditable={!!onUpdate}
-          suppressContentEditableWarning
-          onBlur={(e) => onUpdate?.({ ...data, body: e.currentTarget.textContent ?? '' })}
+          {...richTextProps(data.body ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, body: html }))}
           style={{
             fontFamily: '"Saans", sans-serif',
             fontSize: Math.round(17 * s),
@@ -107,9 +98,7 @@ export default function TwoColMediaSlide({ data, interactive = true, onUpdate, t
             outline: 'none',
             cursor: onUpdate ? 'text' : 'default',
           }}
-        >
-          {data.body}
-        </div>
+        />
       </div>
 
       {/* Right — image or colored panel */}

@@ -13,6 +13,8 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 import { renderSlide, LogoLayer } from '@/components/SlideCanvas';
 import { LogoOverlay } from '@/lib/slides';
 import RemixBar from '@/components/RemixBar';
+import RecentDecksModal from '@/components/RecentDecksModal';
+import { getOrCreateDeckId, setCurrentDeckId, upsertHistory, deckName, DeckEntry } from '@/lib/deckHistory';
 
 const STORAGE_KEY = 'slidegen-current-deck';
 const SAVED_KEY = 'slidegen-saved-deck';
@@ -20,6 +22,69 @@ const NOTES_KEY = 'slidegen-notes';
 const THEME_KEY = 'slidegen-theme';
 const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
 const VIEWER_NAME_KEY = 'slidegen-viewer-name';
+const IMG_KEY_PREFIX = 'slidegen-img-';
+
+/** Save base64 images to individual per-slide keys so they don't bloat the main autosave. */
+function saveImageAssets(slides: SlideData[]) {
+  for (const s of slides) {
+    const rec = s as unknown as Record<string, unknown>;
+    if (typeof rec.imageUrl === 'string' && (rec.imageUrl as string).startsWith('data:')) {
+      try { localStorage.setItem(`${IMG_KEY_PREFIX}${s.id}`, rec.imageUrl as string); } catch {}
+    }
+  }
+}
+
+/** Re-attach saved base64 images to slides that don't already have an inline imageUrl. */
+function restoreImageAssets(slides: SlideData[]): SlideData[] {
+  return slides.map((s) => {
+    const rec = s as unknown as Record<string, unknown>;
+    if (!rec.imageUrl) {
+      const img = localStorage.getItem(`${IMG_KEY_PREFIX}${s.id}`);
+      if (img) return { ...s, imageUrl: img } as SlideData;
+    }
+    return s;
+  });
+}
+
+/** Strip base64 imageUrls before storing in STORAGE_KEY / deck history to avoid quota issues. */
+function stripImageUrls(slides: SlideData[]): SlideData[] {
+  return slides.map((s) => {
+    const rec = s as unknown as Record<string, unknown>;
+    if (typeof rec.imageUrl === 'string' && (rec.imageUrl as string).startsWith('data:')) {
+      return { ...s, imageUrl: undefined } as SlideData;
+    }
+    return s;
+  });
+}
+
+/**
+ * One-time purge: remove base64 images from any existing localStorage entries
+ * (history, saved deck) that were written before the per-slide image key approach.
+ * Call this before loading slides so there is free quota for saveImageAssets.
+ */
+function purgeStorageBloat() {
+  const HISTORY_KEY = 'slidegen-deck-history';
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) {
+      const history = JSON.parse(raw) as Array<{ slides?: unknown[] }>;
+      const cleaned = history.map((d) => ({ ...d, slides: stripImageUrls((d.slides ?? []) as SlideData[]) }));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(cleaned));
+    }
+  } catch {
+    try { localStorage.removeItem(HISTORY_KEY); } catch {}
+  }
+  // Strip base64 from the "saved deck" backup too
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as SlideData[];
+      if (Array.isArray(parsed)) {
+        localStorage.setItem(SAVED_KEY, JSON.stringify(stripImageUrls(parsed)));
+      }
+    }
+  } catch {}
+}
 
 interface CommentReply {
   id: string;
@@ -40,6 +105,98 @@ interface SlideComment {
   replies?: CommentReply[];
 }
 
+/** Floating toolbar that appears above selected text to insert/remove hyperlinks */
+function LinkToolbar() {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [inLink, setInLink] = useState(false);
+
+  useEffect(() => {
+    const onSelection = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) { setPos(null); return; }
+      const range = sel.getRangeAt(0);
+      // Only show if selection is inside a contentEditable element
+      let el: Node | null = range.commonAncestorContainer;
+      if (el.nodeType === Node.TEXT_NODE) el = el.parentElement;
+      let editable = false;
+      let node: Element | null = el as Element | null;
+      while (node) {
+        if ((node as HTMLElement).isContentEditable) { editable = true; break; }
+        node = node.parentElement;
+      }
+      if (!editable) { setPos(null); return; }
+      const rect = range.getBoundingClientRect();
+      setPos({ x: rect.left + rect.width / 2, y: rect.top - 8 });
+      // Check if cursor is inside a link
+      let n: Node | null = range.commonAncestorContainer;
+      if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+      let insideLink = false;
+      let check: Element | null = n as Element | null;
+      while (check) { if (check.tagName === 'A') { insideLink = true; break; } check = check.parentElement; }
+      setInLink(insideLink);
+    };
+    document.addEventListener('selectionchange', onSelection);
+    return () => document.removeEventListener('selectionchange', onSelection);
+  }, []);
+
+  if (!pos) return null;
+
+  const insertLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const url = window.prompt('Enter URL:', 'https://');
+    if (!url) return;
+    document.execCommand('createLink', false, url);
+    // Make the created link open in a new tab
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      const a = sel.getRangeAt(0).commonAncestorContainer.parentElement?.closest('a');
+      if (a) a.setAttribute('target', '_blank');
+    }
+    setPos(null);
+  };
+
+  const removeLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    document.execCommand('unlink');
+    setPos(null);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: pos.x,
+        top: pos.y,
+        transform: 'translate(-50%, -100%)',
+        background: '#111',
+        border: '1px solid #333',
+        borderRadius: 6,
+        display: 'flex',
+        gap: 1,
+        overflow: 'hidden',
+        zIndex: 9999,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+        pointerEvents: 'auto',
+      }}
+    >
+      <button
+        onMouseDown={insertLink}
+        style={{ padding: '6px 12px', background: 'transparent', border: 'none', color: '#008c44', fontSize: 12, fontFamily: '"Saans", sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}
+      >
+        🔗 {inLink ? 'Edit link' : 'Add link'}
+      </button>
+      {inLink && (
+        <button
+          onMouseDown={removeLink}
+          style={{ padding: '6px 10px', background: 'transparent', border: 'none', borderLeft: '1px solid #333', color: '#888', fontSize: 12, fontFamily: '"Saans", sans-serif', cursor: 'pointer' }}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function SlideGenPage() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem('slidegen-current-deck'); } catch { return true; }
@@ -51,6 +208,7 @@ export default function SlideGenPage() {
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
   const [hasSavedDeck, setHasSavedDeck] = useState(false);
   const [googleSetupNeeded, setGoogleSetupNeeded] = useState(false);
+  const [gslidesUrl, setGslidesUrl] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [presenting, setPresenting] = useState(false);
   const [presentIndex, setPresentIndex] = useState(0);
@@ -72,6 +230,8 @@ export default function SlideGenPage() {
   const [showResolved, setShowResolved] = useState(false);
   const [preRemixSlides, setPreRemixSlides] = useState<Record<string, SlideData>>({});
   const [chatMode, setChatMode] = useState(false);
+  const [showRecents, setShowRecents] = useState(false);
+  const deckIdRef = useRef<string>('');
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const presentContainerRef = useRef<HTMLDivElement>(null);
@@ -80,12 +240,15 @@ export default function SlideGenPage() {
 
   // Restore autosaved deck + notes on mount
   useEffect(() => {
+    // Free up localStorage quota by removing old base64 blobs before reading/writing anything
+    purgeStorageBloat();
+    deckIdRef.current = getOrCreateDeckId();
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setSlides(parsed);
+          setSlides(restoreImageAssets(parsed));
           // Onboarding always shows on landing — user can skip to continue previous deck
         }
       }
@@ -110,19 +273,40 @@ export default function SlideGenPage() {
       if (!json) return;
       const state = JSON.parse(json);
       if (Array.isArray(state.slides) && state.slides.length > 0) {
-        setSlides(state.slides);
+        setSlides(restoreImageAssets(state.slides));
         setShowOnboarding(false);
       }
       if (state.colorMode && THEMES[state.colorMode as ColorMode]) setColorMode(state.colorMode);
       if (state.slideColorOverrides) setSlideColorOverrides(state.slideColorOverrides);
       if (Array.isArray(state.comments)) setComments(state.comments);
+      // Auto-enter present mode if link includes ?present=1
+      if (new URLSearchParams(window.location.search).get('present') === '1') {
+        setPresentIndex(0);
+        setShowPresentControls(false);
+        setPresenting(true);
+      }
     } catch { /* ignore malformed hash */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Autosave slides
+  // Autosave slides + upsert into deck history
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(slides)); } catch {}
+    // 1. Clean history first — this frees quota by stripping any old base64 blobs
+    if (deckIdRef.current && slides.length > 0) {
+      upsertHistory({
+        id: deckIdRef.current,
+        name: deckName(slides),
+        lastModified: Date.now(),
+        slides: stripImageUrls(slides),
+        colorMode,
+        slideColorOverrides,
+      });
+    }
+    // 2. Now save images to per-slide keys (quota should be available)
+    saveImageAssets(slides);
+    // 3. Save main deck without base64 blobs
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stripImageUrls(slides))); } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides]);
 
   // Autosave notes
@@ -259,19 +443,17 @@ export default function SlideGenPage() {
       setGoogleSetupNeeded(true);
       return;
     }
-    const { buildPptxBlob } = await import('@/lib/exportPptx');
-    const { openInGoogleSlides } = await import('@/lib/googleSlides');
+    setGslidesUrl(null);
     setExportProgress({ current: 0, total: slides.length });
     try {
-      const blob = await buildPptxBlob(
-        slides,
-        (s, interactive) => renderSlide(s, interactive, undefined, getSlideTheme(s)),
-        (current, total) => { setExportProgress({ current, total }); },
-      );
-      setExportProgress({ current: slides.length, total: slides.length });
-      await openInGoogleSlides(blob);
+      const { buildNativePptxBlob } = await import('@/lib/exportPptxNative');
+      const pptxBlob = await buildNativePptxBlob(slides, getSlideTheme, (cur, tot) => setExportProgress({ current: cur, total: tot }));
+      const { openInGoogleSlides } = await import('@/lib/googleSlides');
+      const url = await openInGoogleSlides(pptxBlob, deckName(slides));
+      setGslidesUrl(url);
     } catch (err) {
       console.error(err);
+      alert(`Google Slides export failed:\n\n${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setExportProgress(null);
     }
@@ -715,10 +897,31 @@ export default function SlideGenPage() {
           >
             {exportProgress ? `Exporting…` : 'GSlides'}
           </button>
+          {gslidesUrl && (
+            <a
+              href={gslidesUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setGslidesUrl(null)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: '#1a3a1a', border: '1px solid #00cc55',
+                color: '#00cc55', borderRadius: 4, padding: '5px 10px',
+                fontFamily: '"Saans", sans-serif', fontSize: 12, fontWeight: 500,
+                textDecoration: 'none', whiteSpace: 'nowrap',
+              }}
+            >
+              ↗ Open in Google Slides
+            </a>
+          )}
 
           <button
             onClick={() => {
-              // Strip base64 images before sharing — they bloat URLs by 10–100x
+              // Full state (with images) → browser history, so returning to the page restores images
+              const fullState = { slides, colorMode, slideColorOverrides, comments };
+              const fullCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(fullState));
+              window.history.replaceState(null, '', `#s=${fullCompressed}`);
+              // Strip base64 images from the SHARED URL only — keeps clipboard URL short
               const stripBase64 = (s: SlideData) => {
                 const rec = s as unknown as Record<string, unknown>;
                 if (typeof rec.imageUrl === 'string' && rec.imageUrl.startsWith('data:')) {
@@ -726,10 +929,9 @@ export default function SlideGenPage() {
                 }
                 return s;
               };
-              const state = { slides: slides.map(stripBase64), colorMode, slideColorOverrides, comments };
-              const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
-              const url = `${window.location.origin}${window.location.pathname}#s=${compressed}`;
-              window.history.replaceState(null, '', `#s=${compressed}`);
+              const shareState = { slides: slides.map(stripBase64), colorMode, slideColorOverrides, comments };
+              const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(shareState));
+              const url = `${window.location.origin}${window.location.pathname}?present=1#s=${compressed}`;
               navigator.clipboard.writeText(url).then(() => {
                 setShareStatus('copied');
                 setTimeout(() => setShareStatus('idle'), 2500);
@@ -747,6 +949,20 @@ export default function SlideGenPage() {
             onMouseLeave={(e) => { if (shareStatus === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; (e.currentTarget as HTMLButtonElement).style.color = '#F8FFFA'; } }}
           >
             {shareStatus === 'copied' ? '✓ Copied!' : '↗ Share'}
+          </button>
+
+          <button
+            onClick={() => setShowRecents(true)}
+            style={{
+              background: 'transparent', border: '1px solid #2a2a2a',
+              color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 13,
+              fontWeight: 500, cursor: 'pointer', padding: '5px 12px',
+              transition: 'border-color 0.15s, color 0.15s', whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#444'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2a2a'; }}
+          >
+            Recents
           </button>
 
           <button
@@ -804,6 +1020,9 @@ export default function SlideGenPage() {
             slideColorOverrides={slideColorOverrides}
           />
         </div>
+
+        {/* Floating link toolbar — shown when text is selected in a slide contentEditable */}
+        {!commentMode && !presenting && <LinkToolbar />}
 
         {/* Main canvas */}
         <div
@@ -1238,7 +1457,7 @@ export default function SlideGenPage() {
             activeSlide && (
               <EditPanel
                 slide={activeSlide}
-                onChange={updateSlide}
+                onChange={(updated) => updateActiveSlide(updated as Partial<SlideData>)}
                 colorMode={colorMode}
                 onColorModeChange={setColorMode}
                 slideColorMode={slideColorOverrides[activeSlide.id]}
@@ -1310,6 +1529,22 @@ export default function SlideGenPage() {
       </div>
 
       {showAddModal && <AddSlideModal onAdd={addSlide} onClose={() => setShowAddModal(false)} />}
+
+      {showRecents && (
+        <RecentDecksModal
+          currentDeckId={deckIdRef.current}
+          onLoad={(entry: DeckEntry) => {
+            setSlides(entry.slides);
+            setColorMode(entry.colorMode);
+            setSlideColorOverrides(entry.slideColorOverrides ?? {});
+            setActiveIndex(0);
+            deckIdRef.current = entry.id;
+            setCurrentDeckId(entry.id);
+            setShowRecents(false);
+          }}
+          onClose={() => setShowRecents(false)}
+        />
+      )}
 
       {/* Viewer name prompt */}
       {showNamePrompt && (

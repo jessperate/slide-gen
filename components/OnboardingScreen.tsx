@@ -10,6 +10,12 @@ interface Props {
 
 const TONES = ['Persuasive', 'Storytelling', 'Educational', 'Formal', 'Funny'];
 
+interface UploadedImage {
+  dataUrl: string;
+  mediaType: string;
+  name: string;
+}
+
 export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [topic, setTopic] = useState('');
   const [audience, setAudience] = useState('');
@@ -20,11 +26,32 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [contextTab, setContextTab] = useState<'paste' | 'url'>('paste');
   const [contextText, setContextText] = useState('');
   const [contextUrl, setContextUrl] = useState('');
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [imagesOpen, setImagesOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
+
+  const handleImageFiles = (files: FileList | null) => {
+    if (!files) return;
+    Array.from(files).slice(0, 5 - images.length).forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        const match = dataUrl.match(/^data:([^;]+);base64,/);
+        if (!match) return;
+        setImages((prev) => [
+          ...prev,
+          { dataUrl, mediaType: match[1], name: file.name },
+        ].slice(0, 5));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
@@ -40,6 +67,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
           tone,
           context: contextTab === 'paste' && contextText.trim() ? contextText : undefined,
           contextUrl: contextTab === 'url' && contextUrl.trim() ? contextUrl : undefined,
+          images: images.length > 0 ? images.map(({ dataUrl, mediaType }) => ({ dataUrl, mediaType })) : undefined,
         }),
       });
       const data = await res.json();
@@ -249,6 +277,77 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
                     ? 'Claude will use this as background context when building your deck.'
                     : 'Works with publicly shared Notion pages, websites, or any public URL.'}
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Image upload expander */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setImagesOpen((o) => !o)}
+            style={{
+              background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+              fontFamily: '"Saans", sans-serif', fontSize: 12,
+              color: imagesOpen ? 'rgba(0,255,100,0.7)' : 'rgba(255,255,255,0.35)',
+              display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = imagesOpen ? 'rgba(0,255,100,0.9)' : 'rgba(255,255,255,0.6)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = imagesOpen ? 'rgba(0,255,100,0.7)' : 'rgba(255,255,255,0.35)')}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1 }}>{imagesOpen ? '−' : '＋'}</span>
+            Add images {images.length > 0 && <span style={{ color: 'rgba(0,255,100,0.6)' }}>({images.length})</span>}
+          </button>
+
+          {imagesOpen && (
+            <div style={{ marginTop: 10, border: '1px solid rgba(0,255,100,0.15)', background: 'rgba(0,255,100,0.03)', padding: '12px 14px' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => handleImageFiles(e.target.files)}
+              />
+              {/* Thumbnails */}
+              {images.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {images.map((img, i) => (
+                    <div key={i} style={{ position: 'relative' }}>
+                      <img
+                        src={img.dataUrl}
+                        alt={img.name}
+                        style={{ width: 64, height: 64, objectFit: 'cover', display: 'block', border: '1px solid rgba(0,255,100,0.2)' }}
+                      />
+                      <button
+                        onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                        style={{
+                          position: 'absolute', top: -6, right: -6, width: 16, height: 16,
+                          background: '#333', border: '1px solid #555', borderRadius: '50%',
+                          color: '#fff', fontSize: 9, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: 0,
+                        }}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {images.length < 5 && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: '100%', background: 'transparent', border: '1px dashed rgba(0,255,100,0.25)',
+                    color: 'rgba(255,255,255,0.4)', fontFamily: '"Saans", sans-serif', fontSize: 12,
+                    cursor: 'pointer', padding: '10px', transition: 'border-color 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(0,255,100,0.5)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(0,255,100,0.25)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+                >
+                  {images.length === 0 ? '↑ Upload images (up to 5)' : '↑ Add more'}
+                </button>
+              )}
+              <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 8, lineHeight: 1.5 }}>
+                Claude will analyze your images and place them on the most relevant slides.
               </div>
             </div>
           )}
