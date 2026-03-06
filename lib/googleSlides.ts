@@ -70,15 +70,35 @@ async function uploadPptxToDrive(accessToken: string, pptxBlob: Blob, name: stri
   };
   if (folderId) metadata.parents = [folderId];
 
-  const body = new FormData();
-  body.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  body.append('file', pptxBlob);
+  // Build multipart body manually — FormData doesn't reliably work with Drive API
+  const boundary = 'boundary_slidegen_' + Math.random().toString(36).slice(2);
+  const metaJson = JSON.stringify(metadata);
+  const pptxBytes = await pptxBlob.arrayBuffer();
+
+  const encoder = new TextEncoder();
+  const metaPart = encoder.encode(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metaJson}\r\n`,
+  );
+  const filePart = encoder.encode(
+    `--${boundary}\r\nContent-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation\r\n\r\n`,
+  );
+  const closing = encoder.encode(`\r\n--${boundary}--`);
+
+  const body = new Uint8Array(metaPart.byteLength + filePart.byteLength + pptxBytes.byteLength + closing.byteLength);
+  let offset = 0;
+  body.set(metaPart, offset); offset += metaPart.byteLength;
+  body.set(filePart, offset); offset += filePart.byteLength;
+  body.set(new Uint8Array(pptxBytes), offset); offset += pptxBytes.byteLength;
+  body.set(closing, offset);
 
   const res = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
       body,
     },
   );
