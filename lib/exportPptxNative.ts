@@ -49,7 +49,7 @@ function addRect(
   hPx: number,
   color: string,
 ) {
-  slide.addShape((pptxgen as unknown as { ShapeType: Record<string, string> }).ShapeType.rect as 'rect', {
+  slide.addShape('rect' as Parameters<PptxSlide['addShape']>[0], {
     x: px(xPx),
     y: px(yPx),
     w: px(wPx),
