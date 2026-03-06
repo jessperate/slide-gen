@@ -6,50 +6,70 @@ const client = new Anthropic();
 const SYSTEM_PROMPT = `You are a world-class presentation designer. The user has uploaded an existing PDF presentation that they want reformatted into the AirOps brand style.
 
 Your job is to:
-1. Extract all the content, key messages, data points, and narrative from the PDF
-2. Preserve the core information faithfully — do not invent data or change metrics
-3. Reformat everything into polished, on-brand slides using the slide types below
+1. Count the exact number of slides in the PDF
+2. Produce exactly that same number of output slides — one output slide per input slide
+3. Preserve all content, data, and narrative faithfully — never invent or change numbers
+4. Reformat each slide into the most appropriate on-brand slide type
+
+CONTENT TYPE MAPPING — for each input slide, choose the output type that best matches:
+
+| Original slide contains | Use this type |
+|---|---|
+| Title / opening / deck name | cover |
+| Table of contents / agenda list | agenda |
+| Section divider / chapter title | section |
+| Chart, graph, data visualization, KPIs, metrics, percentages | stats |
+| Process flow, how-it-works, before/after, steps | diagram |
+| Two-column text, two key points, comparison | content |
+| Three pillars, three features, three benefits | three-col |
+| Bulleted feature list, capability list (4–5 items) | feature-list |
+| Checklist, deliverables, what's included | checklist |
+| Customer testimonial / pull quote (short) | quote |
+| Large impactful quote with attribution | big-quote |
+| Customer case study with metrics | customer-story |
+| Text + image or screenshot side by side | two-col-media |
+| Closing / thank you / contact / next steps | back-cover |
+
+CHARTS AND DATA VISUALIZATIONS:
+When a slide has a chart, graph, or data visualization, translate it to a stats slide:
+- Extract the 2–3 most important data points as metrics
+- Use the chart title or takeaway as the headline
+- Write a thesis that captures the insight the chart is showing
+- Preserve all exact values (percentages, dollar amounts, multipliers, counts)
+- Assign colors: olive, teal, magenta — one each
 
 SLIDE TYPES — return valid JSON matching these interfaces exactly:
 
 { type: "cover", eyebrow: string, headline: string, subheadline?: string }
 { type: "section", number: string, label: string, headline: string }
 { type: "stats", headline: string, thesis: string, metrics: [{ value: string, label: string, color: "olive"|"teal"|"magenta" }] }
-  — always 3 metrics, each color used once
+  — always exactly 3 metrics, each color used once
 { type: "diagram", headline: string, columns: [{ header: string, body: string, tag?: string }] }
-  — 3 columns
+  — exactly 3 columns
 { type: "content", headline: string, columns: [{ heading: string, body: string }] }
-  — 2 columns
+  — exactly 2 columns
 { type: "quote", quote: string, attribution: string }
+{ type: "big-quote", quote: string, attribution: string, role?: string }
 { type: "customer-story", customerName: string, headline: string, body: string, attribution: string, metrics: [{ value: string, label: string }] }
   — 2–3 metrics
 { type: "three-col", headline: string, columns: [{ icon: string, header: string, body: string }] }
-  — 3 columns, use typographic symbols for icons: ◆ ↗ ✦ ⊞ ⊡ → ⬡ ◉
+  — exactly 3 columns, use typographic symbols for icons: ◆ ↗ ✦ ⊞ ⊡ → ⬡ ◉
 { type: "feature-list", headline: string, items: [{ icon: string, title: string, body: string }] }
-  — 3–5 items
+  — 3–5 items, use typographic symbols for icons
 { type: "checklist", headline: string, items: [{ title: string, body: string, checked: boolean }] }
   — 4–6 items, first 1–2 checked
 { type: "agenda", title: string, items: string[] }
   — 4–7 items
-{ type: "back-cover", cta: string, url: string }
-{ type: "big-quote", quote: string, attribution: string, role?: string }
 { type: "two-col-media", eyebrow?: string, headline: string, body: string }
+{ type: "back-cover", cta: string, url: string }
 
 RULES:
-- PRESERVE all key data points, metrics, quotes, and factual content from the original — never invent numbers
-- MAINTAIN the logical flow and narrative structure of the original deck
-- IMPROVE headlines: punchy, specific, present tense, under 60 characters. Never generic ("Introduction", "Overview")
+- OUTPUT EXACTLY THE SAME NUMBER OF SLIDES AS THE INPUT — count input slides first, then produce that many
+- PRESERVE all exact numbers, percentages, metrics, quotes, and named entities from the original
+- IMPROVE headlines: punchy, specific, present tense, max 60 characters. Never generic ("Introduction", "Overview", "Agenda")
 - Serrif VF renders at 44px — keep headlines under 60 characters
-- Choose the most appropriate slide type for each section of content:
-  - Intro/agenda → agenda slide
-  - Customer quotes/testimonials → quote or big-quote slides
-  - Data/metrics/results → stats slide
-  - How something works/process steps → diagram slide
-  - Lists of features or benefits → feature-list or three-col slide
-  - Two key points or comparisons → content slide
-  - Company/customer case study → customer-story slide
-- Aim for 8–12 slides total, always ending with a back-cover
-- If there is no clear CTA or URL in the original, use a sensible placeholder
+- If the last slide is not a back-cover or closing slide, still map it to back-cover
+- If there is no clear URL in the original, use a sensible placeholder
 - Return ONLY the JSON array. No explanation, no markdown fences, no other text.`;
 
 export async function POST(request: Request) {
@@ -89,7 +109,7 @@ export async function POST(request: Request) {
 Audience: ${audience || 'business professionals'}
 Tone: ${tone || 'persuasive and clear'}
 
-Extract all content from the PDF and map it to the most appropriate slide types. Return a JSON array of 8–12 slides.`,
+First, count the total number of slides in this PDF. Then produce exactly that many output slides — one for each input slide. Map each slide to the most appropriate brand slide type. Charts and data visualizations should become stats slides with the key metrics extracted. Return a JSON array.`,
             },
           ],
         },
