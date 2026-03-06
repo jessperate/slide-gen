@@ -446,8 +446,57 @@ export default function SlideGenPage() {
     setGslidesUrl(null);
     setExportProgress({ current: 0, total: slides.length });
     try {
-      const { buildNativePptxBlob } = await import('@/lib/exportPptxNative');
-      const pptxBlob = await buildNativePptxBlob(slides, getSlideTheme, (cur, tot) => setExportProgress({ current: cur, total: tot }));
+      // Screenshot each slide at 1280×720 into an off-screen container
+      const [html2canvasModule, { createRoot }] = await Promise.all([
+        import('html2canvas'),
+        import('react-dom/client'),
+      ]);
+      const html2canvas = html2canvasModule.default;
+
+      const container = document.createElement('div');
+      container.style.cssText =
+        'position:fixed;left:-9999px;top:0;width:1280px;height:720px;overflow:hidden;pointer-events:none;z-index:-1;';
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      const pngDataUrls: string[] = [];
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        const theme = getSlideTheme(slide);
+        // Render the slide (non-interactive) into the off-screen div
+        await new Promise<void>((resolve) => {
+          root.render(
+            <div style={{ width: 1280, height: 720, position: 'relative', overflow: 'hidden' }}>
+              {renderSlide(slide, false, () => {}, theme)}
+              <LogoLayer
+                logos={(slide as { logos?: LogoOverlay[] }).logos ?? []}
+                scale={1}
+                interactive={false}
+              />
+            </div>,
+          );
+          // Give fonts + images time to render
+          setTimeout(resolve, 150);
+        });
+
+        const canvas = await html2canvas(container, {
+          width: 1280,
+          height: 720,
+          scale: 1,
+          useCORS: true,
+          logging: false,
+          backgroundColor: null,
+        });
+        pngDataUrls.push(canvas.toDataURL('image/png'));
+        setExportProgress({ current: i + 1, total: slides.length });
+      }
+
+      root.unmount();
+      document.body.removeChild(container);
+
+      const { buildScreenshotPptxBlob } = await import('@/lib/exportPptxNative');
+      const pptxBlob = await buildScreenshotPptxBlob(pngDataUrls);
+
       const { openInGoogleSlides } = await import('@/lib/googleSlides');
       const url = await openInGoogleSlides(pptxBlob, deckName(slides));
       setGslidesUrl(url);

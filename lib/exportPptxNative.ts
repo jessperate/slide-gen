@@ -1101,3 +1101,19 @@ export async function buildNativePptxBlob(
 
   return (await pptx.write({ outputType: 'blob' })) as Blob;
 }
+
+/**
+ * Build a PPTX where every slide is a pixel-perfect PNG screenshot.
+ * Accepts an array of PNG data URLs (one per slide).
+ */
+export async function buildScreenshotPptxBlob(
+  pngDataUrls: string[],
+): Promise<Blob> {
+  const pptx = new pptxgen();
+  pptx.layout = 'LAYOUT_WIDE'; // 10" × 5.625"
+  for (const dataUrl of pngDataUrls) {
+    const slide = pptx.addSlide();
+    slide.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.625 });
+  }
+  return (await pptx.write({ outputType: 'blob' })) as Blob;
+}
