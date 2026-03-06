@@ -64,52 +64,74 @@ async function getOrCreateFolder(accessToken: string): Promise<string> {
 }
 
 async function uploadPptxToDrive(accessToken: string, pptxBlob: Blob, name: string, folderId: string): Promise<string> {
-  const metadata: Record<string, unknown> = {
-    name,
-    mimeType: 'application/vnd.google-apps.presentation',
-  };
+  const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const metadata: Record<string, unknown> = { name };
   if (folderId) metadata.parents = [folderId];
 
-  // Build multipart body manually — FormData doesn't reliably work with Drive API
-  const boundary = 'boundary_slidegen_' + Math.random().toString(36).slice(2);
-  const metaJson = JSON.stringify(metadata);
-  const pptxBytes = await pptxBlob.arrayBuffer();
-
-  const encoder = new TextEncoder();
-  const metaPart = encoder.encode(
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metaJson}\r\n`,
-  );
-  const filePart = encoder.encode(
-    `--${boundary}\r\nContent-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation\r\n\r\n`,
-  );
-  const closing = encoder.encode(`\r\n--${boundary}--`);
-
-  const body = new Uint8Array(metaPart.byteLength + filePart.byteLength + pptxBytes.byteLength + closing.byteLength);
-  let offset = 0;
-  body.set(metaPart, offset); offset += metaPart.byteLength;
-  body.set(filePart, offset); offset += filePart.byteLength;
-  body.set(new Uint8Array(pptxBytes), offset); offset += pptxBytes.byteLength;
-  body.set(closing, offset);
-
-  const res = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+  // Step 1: Initiate a resumable upload session — most reliable for binary files
+  const initRes = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`,
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Type': 'application/json',
+        'X-Upload-Content-Type': PPTX_MIME,
+        'X-Upload-Content-Length': String(pptxBlob.size),
       },
-      body,
+      body: JSON.stringify(metadata),
     },
   );
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? `Upload failed: ${res.status}`);
+  if (!initRes.ok) {
+    const err = await initRes.json().catch(() => ({}));
+    throw new Error(`Upload init failed ${initRes.status}: ${JSON.stringify(err)}`);
   }
 
-  const data = await res.json();
-  return data.id as string;
+  const uploadUrl = initRes.headers.get('Location');
+  if (!uploadUrl) throw new Error('No upload URL returned from Drive API');
+
+  // Step 2: Upload the PPTX bytes
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': PPTX_MIME },
+    body: pptxBlob,
+  });
+
+  if (!uploadRes.ok) {
+    const err = await uploadRes.json().catch(() => ({}));
+    throw new Error(`Upload failed ${uploadRes.status}: ${JSON.stringify(err)}`);
+  }
+
+  const data = await uploadRes.json();
+  const fileId = data.id as string;
+
+  // Step 3: Convert the uploaded PPTX to Google Slides format
+  const convertRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}/copy`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.presentation' }),
+    },
+  );
+
+  if (!convertRes.ok) {
+    // Conversion failed — return the raw PPTX file ID so the user can still open it
+    return fileId;
+  }
+
+  const converted = await convertRes.json();
+  // Clean up the original PPTX file silently
+  fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }).catch(() => {});
+
+  return converted.id as string;
 }
 
 /** Returns the Google Slides edit URL after uploading the PPTX blob to Drive. */
