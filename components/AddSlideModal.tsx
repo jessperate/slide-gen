@@ -30,6 +30,8 @@ const slideTypes = [
   { type: 'contact', label: 'Contact' },
   { type: 'team', label: 'Team' },
   { type: 'full-image', label: 'Full Image' },
+  { type: 'chart', label: 'Data Viz (Chartwiz)' },
+  { type: 'table', label: 'Table' },
 ] as const;
 
 export default function AddSlideModal({ onAdd, onClose }: Props) {
