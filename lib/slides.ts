@@ -270,6 +270,39 @@ export interface FullImageSlideData {
   textScale?: number;
 }
 
+export interface CaseStudyStat { value: string; description: string; }
+
+export interface CaseStudySlideData {
+  id: string;
+  type: 'case-study';
+  logoSrc?: string;        // domain (→ Brandfetch) or uploaded data URL
+  category?: string;
+  headline: string;
+  stats: CaseStudyStat[];
+  imageUrl?: string;
+  quote?: string;
+  quoteAttribution?: string;
+  hideLogo?: boolean;
+  logos?: LogoOverlay[];
+  textScale?: number;
+}
+
+export interface SpeakerSlideData {
+  id: string;
+  type: 'speaker';
+  name: string;
+  role?: string;
+  companyLogoSrc?: string; // domain or data URL
+  quote: string;
+  headshotUrl?: string;
+  headshotX?: number;
+  headshotY?: number;
+  headshotZoom?: number;
+  hideLogo?: boolean;
+  logos?: LogoOverlay[];
+  textScale?: number;
+}
+
 export interface ChartRow { label: string; value: number; }
 export interface ChartLineSeries { name: string; pts: Array<{ x: string; y: number }>; }
 export interface ChartSlopeRow { name: string; left: number; right: number; }
@@ -332,7 +365,9 @@ export type SlideData =
   | TeamSlideData
   | FullImageSlideData
   | TableSlideData
-  | ChartSlideData;
+  | ChartSlideData
+  | CaseStudySlideData
+  | SpeakerSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -619,6 +654,28 @@ export const defaultSlideByType: Record<string, SlideData> = {
   'full-image': {
     id: 'new',
     type: 'full-image',
+  },
+  'case-study': {
+    id: 'new',
+    type: 'case-study',
+    logoSrc: 'webflow.com',
+    category: 'Case study: B2B Tech',
+    headline: 'Accelerated Content Refresh 5X and Increases AI-Sourced Signups in Days',
+    stats: [
+      { value: '5x', description: 'increase in content refresh velocity' },
+      { value: '40%', description: 'immediate traffic uplift within days of publication' },
+      { value: '6x', description: 'higher conversion rate from AI-sourced traffic vs traditional SEO' },
+    ],
+    quote: '"AirOps isn\'t just about velocity. It\'s allowing us to scale without losing our brand\'s human touch."',
+    quoteAttribution: '— Nicole Baer, CMO, Carta',
+  },
+  speaker: {
+    id: 'new',
+    type: 'speaker',
+    name: 'Josh Grant',
+    role: 'VP Growth, Webflow',
+    companyLogoSrc: 'webflow.com',
+    quote: '"With AirOps, we grew AI-attributed signups from 2% to over 10% in under a year with zero headcount growth. Just sharper workflows and faster loops."',
   },
   chart: {
     id: 'new',

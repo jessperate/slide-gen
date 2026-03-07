@@ -23,6 +23,8 @@ import TeamSlide from './slides/TeamSlide';
 import FullImageSlide from './slides/FullImageSlide';
 import TableSlide from './slides/TableSlide';
 import ChartSlide from './slides/ChartSlide';
+import CaseStudySlide from './slides/CaseStudySlide';
+import SpeakerSlide from './slides/SpeakerSlide';
 
 interface Props {
   slide: SlideData;
@@ -214,6 +216,24 @@ export function renderSlide(
     case 'chart':
       return (
         <ChartSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'case-study':
+      return (
+        <CaseStudySlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'speaker':
+      return (
+        <SpeakerSlide
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}

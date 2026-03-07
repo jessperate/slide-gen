@@ -30,6 +30,8 @@ const slideTypes = [
   { type: 'contact', label: 'Contact' },
   { type: 'team', label: 'Team' },
   { type: 'full-image', label: 'Full Image' },
+  { type: 'case-study', label: 'Case Study (Logo + Stats)' },
+  { type: 'speaker', label: 'Speaker / Testimonial' },
   { type: 'chart', label: 'Data Viz (Chartwiz)' },
   { type: 'table', label: 'Table' },
 ] as const;

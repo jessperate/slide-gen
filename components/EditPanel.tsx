@@ -21,6 +21,8 @@ import {
   ContactSlideData,
   TeamSlideData,
   ChartSlideData,
+  CaseStudySlideData,
+  SpeakerSlideData,
 } from '@/lib/slides';
 import { ColorMode, THEMES } from '@/lib/themes';
 
@@ -1482,6 +1484,134 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
         );
       }
 
+      case 'case-study': {
+        const cs = slide as CaseStudySlideData;
+        const triggerUpload = (onFile: (url: string) => void) => {
+          const inp = document.createElement('input');
+          inp.type = 'file'; inp.accept = 'image/*';
+          inp.onchange = () => {
+            const f = inp.files?.[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = (e) => onFile(e.target?.result as string);
+            r.readAsDataURL(f);
+          };
+          inp.click();
+        };
+        return (
+          <>
+            {/* Logo */}
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Company logo — domain or upload</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={cs.logoSrc?.startsWith('data:') ? '' : (cs.logoSrc ?? '')}
+                  placeholder="webflow.com"
+                  onChange={(e) => update({ logoSrc: e.target.value })}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button
+                  onClick={() => triggerUpload((url) => update({ logoSrc: url }))}
+                  style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 12px', flexShrink: 0 }}
+                >
+                  {cs.logoSrc?.startsWith('data:') ? '✓ Uploaded' : '↑ Upload'}
+                </button>
+              </div>
+            </div>
+            <Field label="Category" value={cs.category ?? ''} onChange={(v) => update({ category: v })} />
+            <Field label="Headline" value={cs.headline} onChange={(v) => update({ headline: v })} multiline />
+            {/* Stats */}
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Stats</label>
+              {cs.stats.map((stat, i) => (
+                <div key={i} style={{ marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid #2a2a2a' }}>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                    <input
+                      type="text"
+                      value={stat.value}
+                      placeholder="5x"
+                      onChange={(e) => { const next = [...cs.stats]; next[i] = { ...next[i], value: e.target.value }; update({ stats: next }); }}
+                      style={{ ...inputStyle, width: 70, flexShrink: 0 }}
+                    />
+                    <input
+                      type="text"
+                      value={stat.description}
+                      placeholder="description"
+                      onChange={(e) => { const next = [...cs.stats]; next[i] = { ...next[i], description: e.target.value }; update({ stats: next }); }}
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Screenshot */}
+            <div style={{ ...sectionStyle, ...groupDividerStyle }}>
+              <label style={labelStyle}>Screenshot / image</label>
+              <button
+                onClick={() => triggerUpload((url) => update({ imageUrl: url }))}
+                style={{ width: '100%', background: cs.imageUrl ? '#1a2a1a' : '#2a2a2a', border: `1px solid ${cs.imageUrl ? '#2a4a2a' : '#3a3a3a'}`, color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '8px', textAlign: 'center' }}
+              >
+                {cs.imageUrl ? '✓ Image uploaded — click to replace' : '↑ Upload image'}
+              </button>
+            </div>
+            <Field label="Quote" value={cs.quote ?? ''} onChange={(v) => update({ quote: v })} multiline />
+            <Field label="Attribution" value={cs.quoteAttribution ?? ''} onChange={(v) => update({ quoteAttribution: v })} />
+          </>
+        );
+      }
+
+      case 'speaker': {
+        const sp = slide as SpeakerSlideData;
+        const triggerUpload = (onFile: (url: string) => void) => {
+          const inp = document.createElement('input');
+          inp.type = 'file'; inp.accept = 'image/*';
+          inp.onchange = () => {
+            const f = inp.files?.[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = (e) => onFile(e.target?.result as string);
+            r.readAsDataURL(f);
+          };
+          inp.click();
+        };
+        return (
+          <>
+            <Field label="Name" value={sp.name} onChange={(v) => update({ name: v })} />
+            <Field label="Role" value={sp.role ?? ''} onChange={(v) => update({ role: v })} />
+            <Field label="Quote" value={sp.quote} onChange={(v) => update({ quote: v })} multiline />
+            {/* Headshot */}
+            <div style={{ ...sectionStyle, ...groupDividerStyle }}>
+              <label style={labelStyle}>Headshot photo</label>
+              <button
+                onClick={() => triggerUpload((url) => update({ headshotUrl: url }))}
+                style={{ width: '100%', background: sp.headshotUrl ? '#1a2a1a' : '#2a2a2a', border: `1px solid ${sp.headshotUrl ? '#2a4a2a' : '#3a3a3a'}`, color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '8px', textAlign: 'center' }}
+              >
+                {sp.headshotUrl ? '✓ Photo uploaded — click to replace' : '↑ Upload headshot'}
+              </button>
+              {sp.headshotUrl && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>Drag on slide to reposition · scroll to zoom</div>}
+            </div>
+            {/* Company logo */}
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Company logo — domain or upload</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={sp.companyLogoSrc?.startsWith('data:') ? '' : (sp.companyLogoSrc ?? '')}
+                  placeholder="webflow.com"
+                  onChange={(e) => update({ companyLogoSrc: e.target.value })}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button
+                  onClick={() => triggerUpload((url) => update({ companyLogoSrc: url }))}
+                  style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 12px', flexShrink: 0 }}
+                >
+                  {sp.companyLogoSrc?.startsWith('data:') ? '✓ Uploaded' : '↑ Upload'}
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      }
+
       case 'chart': {
         const chartSlide = slide as ChartSlideData;
         const chartwizUrl = (() => {
@@ -1623,6 +1753,8 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
       case 'team': return 'Team';
       case 'chart': return 'Data Viz';
       case 'table': return 'Table';
+      case 'case-study': return 'Case Study';
+      case 'speaker': return 'Speaker';
       default: return 'Slide';
     }
   };
