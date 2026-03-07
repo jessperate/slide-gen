@@ -28,33 +28,36 @@ export default function FullImageSlide({ data, interactive = true, onUpdate, the
     >
       {/* Full-bleed image */}
       {hasImage ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={data.imageUrl}
-          alt=""
-          draggable={false}
-          style={{
-            position: 'absolute',
-            width: `${(data.imageZoom ?? 1) * 100}%`,
-            height: `${(data.imageZoom ?? 1) * 100}%`,
-            objectFit: 'cover',
-            top: `${data.imageY ?? 50}%`,
-            left: `${data.imageX ?? 50}%`,
-            transform: 'translate(-50%, -50%)',
-            cursor: interactive && onUpdate ? 'grab' : 'default',
-            userSelect: 'none',
-          }}
-          onMouseDown={interactive && onUpdate ? (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const startX = e.clientX, startY = e.clientY;
-            const ix = data.imageX ?? 50, iy = data.imageY ?? 50;
-            const rect = e.currentTarget.parentElement!.getBoundingClientRect();
-            const onMove = (me: MouseEvent) => onUpdate?.({ imageX: Math.max(0, Math.min(100, ix - (me.clientX - startX) / rect.width * 100)), imageY: Math.max(0, Math.min(100, iy - (me.clientY - startY) / rect.height * 100)) });
-            const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-            window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-          } : undefined}
-          onWheel={interactive && onUpdate ? (e) => { e.preventDefault(); onUpdate?.({ imageZoom: Math.max(1, Math.min(3, (data.imageZoom ?? 1) + (e.deltaY < 0 ? 0.1 : -0.1))) }); } : undefined}
-        />
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={data.imageUrl}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: `${data.imageX ?? 50}% ${data.imageY ?? 50}%`,
+              transform: `scale(${data.imageZoom ?? 1})`,
+              transformOrigin: `${data.imageX ?? 50}% ${data.imageY ?? 50}%`,
+              cursor: interactive && onUpdate ? 'grab' : 'default',
+              userSelect: 'none',
+            }}
+            onMouseDown={interactive && onUpdate ? (e) => {
+              e.preventDefault(); e.stopPropagation();
+              const startX = e.clientX, startY = e.clientY;
+              const ix = data.imageX ?? 50, iy = data.imageY ?? 50;
+              const rect = e.currentTarget.parentElement!.getBoundingClientRect();
+              const onMove = (me: MouseEvent) => onUpdate?.({ imageX: Math.max(0, Math.min(100, ix - (me.clientX - startX) / rect.width * 100)), imageY: Math.max(0, Math.min(100, iy - (me.clientY - startY) / rect.height * 100)) });
+              const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+              window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+            } : undefined}
+            onWheel={interactive && onUpdate ? (e) => { e.preventDefault(); onUpdate?.({ imageZoom: Math.max(1, Math.min(3, (data.imageZoom ?? 1) + (e.deltaY < 0 ? 0.1 : -0.1))) }); } : undefined}
+          />
+        </div>
       ) : (
         /* Placeholder when no image */
         <div

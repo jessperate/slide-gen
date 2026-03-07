@@ -22,6 +22,7 @@ import ContactSlide from './slides/ContactSlide';
 import TeamSlide from './slides/TeamSlide';
 import FullImageSlide from './slides/FullImageSlide';
 import TableSlide from './slides/TableSlide';
+import ChartSlide from './slides/ChartSlide';
 
 interface Props {
   slide: SlideData;
@@ -204,6 +205,15 @@ export function renderSlide(
     case 'table':
       return (
         <TableSlide
+          data={slide}
+          interactive={interactive}
+          onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}
+          theme={theme}
+        />
+      );
+    case 'chart':
+      return (
+        <ChartSlide
           data={slide}
           interactive={interactive}
           onUpdate={onUpdate as ((updates: Partial<typeof slide>) => void) | undefined}

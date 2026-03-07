@@ -29,6 +29,7 @@ CONTENT TYPE MAPPING — for each input slide, choose the output type that best 
 | Customer case study with metrics | customer-story |
 | Text + image or screenshot side by side | two-col-media |
 | Data table, comparison matrix, feature grid, spec sheet | table |
+| Chart, graph, bar chart, line graph, pie chart, data visualization | chart |
 | Closing / thank you / contact / next steps | back-cover |
 
 CHARTS AND DATA VISUALIZATIONS:
@@ -64,6 +65,8 @@ SLIDE TYPES — return valid JSON matching these interfaces exactly:
 { type: "two-col-media", eyebrow?: string, headline: string, body: string }
 { type: "table", headline: string, headers: string[], rows: string[][] }
   — 2–6 columns, up to 8 rows; use for any data table, comparison grid, or spec sheet
+{ type: "chart", headline: string, description?: string, chartwizState: { chartType: "vertical"|"horizontal"|"line"|"pie"|"stacked"|"slope", headline: string, description?: string, yAxisLabel?: string, xAxisLabel?: string, vertRows?: [{label:string,value:number}], compRows?: [{label:string,value:number}], pieRows?: [{label:string,value:number}], lineSeries?: [{name:string,pts:[{x:string,y:number}]}], stkCols?: string[], stkSegs?: [{label:string,values:number[]}], slopeRows?: [{name:string,left:number,right:number}], slopeLeftLabel?: string, slopeRightLabel?: string } }
+  — use for any chart or data visualization; pick the chartType that best matches the original chart; populate only the data array for that chartType with the exact values from the source
 { type: "back-cover", cta: string, url: string }
 
 RULES:

@@ -270,6 +270,37 @@ export interface FullImageSlideData {
   textScale?: number;
 }
 
+export interface ChartRow { label: string; value: number; }
+export interface ChartLineSeries { name: string; pts: Array<{ x: string; y: number }>; }
+export interface ChartSlopeRow { name: string; left: number; right: number; }
+export interface ChartStkSeg { label: string; values: number[]; }
+
+export interface ChartSlideData {
+  id: string;
+  type: 'chart';
+  headline: string;
+  description?: string;
+  chartwizState: {
+    chartType: 'vertical' | 'horizontal' | 'line' | 'pie' | 'stacked' | 'slope';
+    headline: string;
+    description?: string;
+    yAxisLabel?: string;
+    xAxisLabel?: string;
+    vertRows?: ChartRow[];
+    compRows?: ChartRow[];
+    pieRows?: ChartRow[];
+    lineSeries?: ChartLineSeries[];
+    stkCols?: string[];
+    stkSegs?: ChartStkSeg[];
+    slopeRows?: ChartSlopeRow[];
+    slopeLeftLabel?: string;
+    slopeRightLabel?: string;
+  };
+  hideLogo?: boolean;
+  logos?: LogoOverlay[];
+  textScale?: number;
+}
+
 export interface TableSlideData {
   id: string;
   type: 'table';
@@ -300,7 +331,8 @@ export type SlideData =
   | ContactSlideData
   | TeamSlideData
   | FullImageSlideData
-  | TableSlideData;
+  | TableSlideData
+  | ChartSlideData;
 
 export const defaultSlides: SlideData[] = [
   {
@@ -587,6 +619,23 @@ export const defaultSlideByType: Record<string, SlideData> = {
   'full-image': {
     id: 'new',
     type: 'full-image',
+  },
+  chart: {
+    id: 'new',
+    type: 'chart',
+    headline: 'Chart headline',
+    description: 'Supporting insight or context for this chart.',
+    chartwizState: {
+      chartType: 'vertical',
+      headline: 'Chart headline',
+      description: '',
+      vertRows: [
+        { label: 'Category A', value: 80 },
+        { label: 'Category B', value: 60 },
+        { label: 'Category C', value: 45 },
+        { label: 'Category D', value: 30 },
+      ],
+    },
   },
   table: {
     id: 'new',
