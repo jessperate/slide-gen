@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import AirOpsLogo from '@/components/AirOpsLogo';
+import LZString from 'lz-string';
 import {
   SlideData,
   LogoOverlay,
@@ -19,6 +20,7 @@ import {
   TwoColMediaSlideData,
   ContactSlideData,
   TeamSlideData,
+  ChartSlideData,
 } from '@/lib/slides';
 import { ColorMode, THEMES } from '@/lib/themes';
 
@@ -1480,6 +1482,121 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
         );
       }
 
+      case 'chart': {
+        const chartSlide = slide as ChartSlideData;
+        const chartwizUrl = (() => {
+          try {
+            const fullState = {
+              theme: 'mint', size: 'landscape', logoType: 'airops',
+              showStats: false, showChart: true, border: true, highlight: '',
+              opts: { grid: true, legend: true, labels: true, yMin: '', yMax: '' },
+              yAxisLabel: '', xAxisLabel: '',
+              refLine: { enabled: false, value: 50, label: 'Reference' },
+              statCards: [], compRows: [], vertRows: [], lineSeries: [],
+              pieRows: [], stkCols: [], stkSegs: [], slopeRows: [],
+              slopeLeftLabel: 'Before', slopeRightLabel: 'After', lineSmooth: false,
+              ...chartSlide.chartwizState,
+            };
+            return `https://airops-chartwiz.vercel.app/#s=${LZString.compressToEncodedURIComponent(JSON.stringify(fullState))}`;
+          } catch { return 'https://airops-chartwiz.vercel.app/'; }
+        })();
+
+        const handleChartwizLink = (raw: string) => {
+          try {
+            const hash = raw.includes('#s=') ? raw.split('#s=')[1] : raw.trim();
+            const decoded = LZString.decompressFromEncodedURIComponent(hash);
+            if (!decoded) return;
+            const parsed = JSON.parse(decoded);
+            // Extract only the chartwizState-relevant fields
+            const { chartType, headline: cwHeadline, description: cwDesc,
+              vertRows, compRows, pieRows, lineSeries, stkCols, stkSegs,
+              slopeRows, slopeLeftLabel, slopeRightLabel, yAxisLabel, xAxisLabel,
+            } = parsed;
+            update({
+              chartwizState: {
+                ...chartSlide.chartwizState,
+                ...(chartType && { chartType }),
+                ...(cwHeadline && { headline: cwHeadline }),
+                ...(cwDesc !== undefined && { description: cwDesc }),
+                ...(vertRows && { vertRows }),
+                ...(compRows && { compRows }),
+                ...(pieRows && { pieRows }),
+                ...(lineSeries && { lineSeries }),
+                ...(stkCols && { stkCols }),
+                ...(stkSegs && { stkSegs }),
+                ...(slopeRows && { slopeRows }),
+                ...(slopeLeftLabel && { slopeLeftLabel }),
+                ...(slopeRightLabel && { slopeRightLabel }),
+                ...(yAxisLabel !== undefined && { yAxisLabel }),
+                ...(xAxisLabel !== undefined && { xAxisLabel }),
+              },
+            } as Partial<ChartSlideData>);
+          } catch {
+            // Invalid link — silently ignore
+          }
+        };
+
+        return (
+          <>
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Headline</label>
+              <input
+                type="text"
+                value={chartSlide.headline}
+                onChange={(e) => update({ headline: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Description</label>
+              <textarea
+                value={chartSlide.description ?? ''}
+                onChange={(e) => update({ description: e.target.value })}
+                rows={3}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ ...sectionStyle, ...groupDividerStyle }}>
+              <a
+                href={chartwizUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '9px 14px',
+                  background: '#00ff64',
+                  color: '#002910',
+                  fontFamily: '"Saans", sans-serif',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  marginBottom: 12,
+                }}
+              >
+                Open in Chartwiz ↗
+              </a>
+              <label style={labelStyle}>Paste Chartwiz link to sync back</label>
+              <input
+                type="text"
+                placeholder="https://airops-chartwiz.vercel.app/#s=…"
+                style={{ ...inputStyle, fontSize: 11 }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  handleChartwizLink(e.clipboardData.getData('text'));
+                }}
+                onChange={(e) => handleChartwizLink(e.target.value)}
+              />
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 6, lineHeight: 1.5 }}>
+                In Chartwiz, click "Copy link" then paste it here to pull your changes back.
+              </div>
+            </div>
+          </>
+        );
+      }
+
       default:
         return null;
     }
@@ -1504,6 +1621,8 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
       case 'two-col-media': return '2 Col + Media';
       case 'contact': return 'Contact';
       case 'team': return 'Team';
+      case 'chart': return 'Data Viz';
+      case 'table': return 'Table';
       default: return 'Slide';
     }
   };
