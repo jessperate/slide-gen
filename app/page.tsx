@@ -214,6 +214,7 @@ export default function SlideGenPage() {
   const [presentIndex, setPresentIndex] = useState(0);
   const [presentScale, setPresentScale] = useState(1);
   const [showPresentControls, setShowPresentControls] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('green');
   const [slideColorOverrides, setSlideColorOverrides] = useState<Record<string, ColorMode>>({});
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
@@ -366,6 +367,8 @@ export default function SlideGenPage() {
     } else if (e.key === 'Escape') {
       setPresenting(false);
       document.exitFullscreen?.().catch(() => {});
+    } else if (e.key === 'n' || e.key === 'N') {
+      setShowNotesPanel((v) => !v);
     }
   }, [presenting, slides.length]);
 
@@ -701,7 +704,7 @@ export default function SlideGenPage() {
             →
           </button>
 
-          {/* Slide counter + notes strip at bottom */}
+          {/* Slide counter bar at bottom */}
           <div
             style={{
               position: 'absolute',
@@ -719,21 +722,12 @@ export default function SlideGenPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Counter */}
-            <div
-              style={{
-                fontFamily: '"Saans Mono", monospace',
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '0.1em',
-                color: 'rgba(255,255,255,0.4)',
-                flexShrink: 0,
-              }}
-            >
+            <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
               {presentIndex + 1} / {slides.length}
             </div>
 
             {/* Dot progress */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1 }}>
               {slides.map((_, i) => (
                 <div
                   key={i}
@@ -749,24 +743,96 @@ export default function SlideGenPage() {
               ))}
             </div>
 
-            {/* Notes */}
-            {notes[slides[presentIndex]?.id] && (
-              <div
-                style={{
-                  flex: 1,
-                  fontFamily: '"Saans", sans-serif',
-                  fontSize: 13,
-                  color: 'rgba(255,255,255,0.55)',
-                  lineHeight: 1.5,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {notes[slides[presentIndex].id]}
-              </div>
-            )}
+            {/* Notes toggle */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowNotesPanel((v) => !v); }}
+              style={{
+                background: showNotesPanel ? 'rgba(0,255,100,0.15)' : 'transparent',
+                border: `1px solid ${showNotesPanel ? '#00ff64' : 'rgba(255,255,255,0.15)'}`,
+                color: showNotesPanel ? '#00ff64' : 'rgba(255,255,255,0.5)',
+                fontFamily: '"Saans Mono", monospace',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                cursor: 'pointer',
+                padding: '4px 10px',
+                flexShrink: 0,
+              }}
+            >
+              NOTES  [N]
+            </button>
           </div>
+
+          {/* Floating speaker notes panel */}
+          {showNotesPanel && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute',
+                bottom: 52,
+                right: 24,
+                width: 380,
+                maxHeight: 280,
+                background: 'rgba(10,10,10,0.95)',
+                border: '1px solid rgba(0,255,100,0.25)',
+                backdropFilter: 'blur(12px)',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 600,
+              }}
+            >
+              {/* Panel header */}
+              <div style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontFamily: '"Saans Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: '#00ff64', textTransform: 'uppercase' }}>
+                  Speaker Notes — Slide {presentIndex + 1}
+                </span>
+                <button
+                  onClick={() => setShowNotesPanel(false)}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Notes content */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+                {notes[slides[presentIndex]?.id] ? (
+                  <div style={{
+                    fontFamily: '"Saans", sans-serif',
+                    fontSize: 14,
+                    color: 'rgba(255,255,255,0.85)',
+                    lineHeight: 1.65,
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {notes[slides[presentIndex].id]}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+                    No notes for this slide
+                  </div>
+                )}
+              </div>
+
+              {/* Prev / Next slide preview */}
+              {presentIndex < slides.length - 1 && notes[slides[presentIndex + 1]?.id] && (
+                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                  <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 9, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', marginBottom: 4, textTransform: 'uppercase' }}>
+                    Up next
+                  </div>
+                  <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {notes[slides[presentIndex + 1].id]}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

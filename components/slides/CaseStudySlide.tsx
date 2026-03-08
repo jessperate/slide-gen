@@ -159,23 +159,30 @@ export default function CaseStudySlide({ data, interactive = true, onUpdate, the
           bottom: 72,
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        {/* Screenshot / image */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+        {/* Screenshot / image — always bordered so the bounding box stays visible */}
+        <div style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+          border: `1px solid ${theme.stroke}`,
+          display: 'flex',
+          alignItems: 'stretch',
+        }}>
           {data.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={data.imageUrl}
               alt=""
               draggable={false}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 20%' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 20%', display: 'block' }}
             />
           ) : (
             <div
               style={{
-                position: 'absolute',
-                inset: 0,
+                flex: 1,
                 background: theme.stroke,
                 display: 'flex',
                 alignItems: 'center',

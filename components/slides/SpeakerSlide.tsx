@@ -114,7 +114,7 @@ export default function SpeakerSlide({ data, interactive = true, onUpdate, theme
       {/* Right column */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
         {/* Headshot */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, border: `1px solid ${theme.stroke}` }}>
           {hasHeadshot ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

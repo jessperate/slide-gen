@@ -1579,16 +1579,11 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             <Field label="Role" value={sp.role ?? ''} onChange={(v) => update({ role: v })} />
             <Field label="Quote" value={sp.quote} onChange={(v) => update({ quote: v })} multiline />
             {/* Headshot */}
-            <div style={{ ...sectionStyle, ...groupDividerStyle }}>
-              <label style={labelStyle}>Headshot photo</label>
-              <button
-                onClick={() => triggerUpload((url) => update({ headshotUrl: url }))}
-                style={{ width: '100%', background: sp.headshotUrl ? '#1a2a1a' : '#2a2a2a', border: `1px solid ${sp.headshotUrl ? '#2a4a2a' : '#3a3a3a'}`, color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 12, cursor: 'pointer', padding: '8px', textAlign: 'center' }}
-              >
-                {sp.headshotUrl ? '✓ Photo uploaded — click to replace' : '↑ Upload headshot'}
-              </button>
-              {sp.headshotUrl && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>Drag on slide to reposition · scroll to zoom</div>}
-            </div>
+            <MemberImageUpload
+              imageUrl={sp.headshotUrl}
+              onUpdate={(url) => update({ headshotUrl: url })}
+            />
+            {sp.headshotUrl && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: -4, marginBottom: 8, paddingLeft: 12 }}>Drag on slide to reposition · scroll to zoom</div>}
             {/* Company logo */}
             <div style={sectionStyle}>
               <label style={labelStyle}>Company logo — domain or upload</label>
@@ -1713,10 +1708,6 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
                 type="text"
                 placeholder="https://airops-chartwiz.vercel.app/#s=…"
                 style={{ ...inputStyle, fontSize: 11 }}
-                onPaste={(e) => {
-                  e.preventDefault();
-                  handleChartwizLink(e.clipboardData.getData('text'));
-                }}
                 onChange={(e) => handleChartwizLink(e.target.value)}
               />
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 6, lineHeight: 1.5 }}>
