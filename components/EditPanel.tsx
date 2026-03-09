@@ -1638,11 +1638,11 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               slopeRows, slopeLeftLabel, slopeRightLabel, yAxisLabel, xAxisLabel,
             } = parsed;
             update({
+              ...(cwHeadline && { headline: cwHeadline }),
+              ...(cwDesc !== undefined && { description: cwDesc }),
               chartwizState: {
                 ...chartSlide.chartwizState,
                 ...(chartType && { chartType }),
-                ...(cwHeadline && { headline: cwHeadline }),
-                ...(cwDesc !== undefined && { description: cwDesc }),
                 ...(vertRows && { vertRows }),
                 ...(compRows && { compRows }),
                 ...(pieRows && { pieRows }),
