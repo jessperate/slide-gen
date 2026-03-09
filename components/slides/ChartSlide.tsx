@@ -1,7 +1,6 @@
 'use client';
 
-import LZString from 'lz-string';
-import { ChartSlideData, ChartRow, ChartLineSeries, ChartSlopeRow, ChartStkSeg } from '@/lib/slides';
+import { ChartSlideData } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import AirOpsLogo from '@/components/AirOpsLogo';
 import { richTextProps } from '@/lib/richText';
@@ -13,405 +12,425 @@ interface Props {
   theme?: SlideTheme;
 }
 
-function buildChartwizUrl(state: ChartSlideData['chartwizState']): string {
-  const fullState = {
-    theme: 'mint', size: 'landscape', logoType: 'airops',
-    showStats: false, showChart: true, border: false, highlight: '',
-    opts: { grid: true, legend: true, labels: true, yMin: '', yMax: '' },
-    yAxisLabel: '', xAxisLabel: '',
-    refLine: { enabled: false, value: 50, label: 'Reference' },
-    statCards: [], compRows: [], vertRows: [], lineSeries: [],
-    pieRows: [], stkCols: [], stkSegs: [], slopeRows: [],
-    slopeLeftLabel: 'Before', slopeRightLabel: 'After', lineSmooth: false,
-    ...state,
-  };
-  return `https://airops-chartwiz.vercel.app/#s=${LZString.compressToEncodedURIComponent(JSON.stringify(fullState))}`;
+// ── Color palettes matching Chartwiz exactly ──────────────────────────────────
+const CW_COLORS: Record<string, Record<string, string>> = {
+  light: {
+    bg: '#F8FFFB', border: '#d4e8da', title: '#000d05', subtitle: '#676c79',
+    barFill: '#CCFFE0', barStroke: '#002910', barAccent: '#EEFF8C',
+    lineStroke: '#008c44', axisTick: '#a5aab6', gridLine: '#f0f0f0',
+    pillBg: '#EEFF8C', pillText: '#000d05', logoFill: '#001408', valueText: '#000d05',
+  },
+  dark: {
+    bg: '#002910', border: '#005c2e', title: '#ffffff', subtitle: 'rgba(255,255,255,0.55)',
+    barFill: '#005c2e', barStroke: '#008c44', barAccent: '#EEFF8C',
+    lineStroke: '#00e676', axisTick: 'rgba(255,255,255,0.35)', gridLine: 'rgba(255,255,255,0.07)',
+    pillBg: '#EEFF8C', pillText: '#000d05', logoFill: '#f8fffa', valueText: '#ffffff',
+  },
+  lime: {
+    bg: '#EEFF8C', border: '#c8d866', title: '#000d05', subtitle: '#676c79',
+    barFill: '#CCFFE0', barStroke: '#002910', barAccent: '#002910',
+    lineStroke: '#008c44', axisTick: '#a5aab6', gridLine: 'rgba(0,0,0,0.08)',
+    pillBg: '#002910', pillText: '#EEFF8C', logoFill: '#001408', valueText: '#000d05',
+  },
+  midnight: {
+    bg: '#000d05', border: '#002910', title: '#ffffff', subtitle: 'rgba(255,255,255,0.45)',
+    barFill: '#002910', barStroke: '#005c2e', barAccent: '#EEFF8C',
+    lineStroke: '#00ff64', axisTick: 'rgba(255,255,255,0.25)', gridLine: 'rgba(255,255,255,0.05)',
+    pillBg: '#EEFF8C', pillText: '#000d05', logoFill: '#f8fffa', valueText: '#ffffff',
+  },
+};
+
+const PAINTING_COLORS = {
+  bg: 'transparent', border: 'rgba(255,255,255,0.3)', title: '#ffffff',
+  subtitle: 'rgba(255,255,255,0.7)', barFill: 'rgba(255,255,255,0.85)',
+  barStroke: 'rgba(0,0,0,0.6)', barAccent: '#EEFF8C',
+  lineStroke: '#00ff64', axisTick: 'rgba(255,255,255,0.5)', gridLine: 'rgba(255,255,255,0.15)',
+  pillBg: '#EEFF8C', pillText: '#000d05', logoFill: '#f8fffa', valueText: '#000d05',
+};
+
+// ── Data parser (matches Chartwiz's parseData) ────────────────────────────────
+function parseData(raw: string, type: string): { labels: string[]; values: number[]; headers?: string[]; rows?: string[][]; value?: string; label?: string; sub?: string } {
+  if (!raw?.trim()) {
+    if (type === 'stat') return { labels: [], values: [], value: '—', label: '', sub: '' };
+    return { labels: ['A', 'B', 'C', 'D'], values: [75, 55, 40, 25] };
+  }
+  if (type === 'table') {
+    const lines = raw.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const headers = lines[0].split(',').map(h => h.trim());
+    const rows = lines.slice(1).map(l => l.split(',').map(c => c.trim()));
+    return { labels: [], values: [], headers, rows };
+  }
+  if (type === 'stat') {
+    const lines = raw.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const get = (prefix: string) => {
+      const line = lines.find(l => l.toLowerCase().startsWith(prefix.toLowerCase() + ':'));
+      return line ? line.slice(line.indexOf(':') + 1).trim() : '';
+    };
+    return { labels: [], values: [], value: get('value') || lines[0] || '—', label: get('label') || lines[1] || '', sub: get('sub') || lines[2] || '' };
+  }
+  const lines = raw.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  const labels: string[] = [], values: number[] = [];
+  for (const line of lines) {
+    const sep = line.lastIndexOf(':');
+    if (sep < 0) continue;
+    const label = line.slice(0, sep).trim();
+    const val = parseFloat(line.slice(sep + 1).trim().replace(/[%,]/g, ''));
+    if (!isNaN(val)) { labels.push(label); values.push(val); }
+  }
+  if ((type === 'bar' || type === 'ranked') && labels.length) {
+    const sorted = labels.map((l, i) => ({ l, v: values[i] })).sort((a, b) => b.v - a.v);
+    return { labels: sorted.map(s => s.l), values: sorted.map(s => s.v) };
+  }
+  return labels.length ? { labels, values } : { labels: ['A', 'B', 'C', 'D'], values: [75, 55, 40, 25] };
 }
 
-function hasChartData(state: ChartSlideData['chartwizState']): boolean {
-  const ct = state.chartType;
-  if (ct === 'vertical') return (state.vertRows?.length ?? 0) > 0;
-  if (ct === 'horizontal') return (state.compRows?.length ?? 0) > 0;
-  if (ct === 'pie') return (state.pieRows?.length ?? 0) > 0;
-  if (ct === 'line') return (state.lineSeries?.length ?? 0) > 0;
-  if (ct === 'stacked') return (state.stkCols?.length ?? 0) > 0;
-  if (ct === 'slope') return (state.slopeRows?.length ?? 0) > 0;
-  return false;
-}
-
-function niceMax(max: number): number {
+function niceMax(max: number) {
   if (max <= 0) return 10;
   const mag = Math.pow(10, Math.floor(Math.log10(max)));
   const n = max / mag;
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
 }
 
-function fmt(v: number): string {
+function fmt(v: number) {
   if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return String(Math.round(v * 10) / 10);
+  if (v % 1 !== 0) return v.toFixed(1);
+  return String(Math.round(v));
 }
 
-function palette(theme: SlideTheme): string[] {
-  return [theme.accentMid, theme.darkBg, '#5B8DB8', '#C9A96E', '#9B59B6', '#E86C4F'];
-}
-
-// ─── Vertical Bar ────────────────────────────────────────────────────────────
-function VertBar({ rows, w, h, theme }: { rows: ChartRow[]; w: number; h: number; theme: SlideTheme }) {
-  const cols = palette(theme);
-  const pt = 28, pb = 44, pl = 56, pr = 24;
-  const pw = w - pl - pr, ph = h - pt - pb;
-  const max = niceMax(Math.max(...rows.map(r => r.value), 1));
-  const barW = Math.min(72, (pw / rows.length) * 0.55);
-  const gap = pw / rows.length;
-  const GRID = 4;
+// ── Chart renderers ───────────────────────────────────────────────────────────
+function renderBar(labels: string[], values: number[], C: Record<string, string>, W: number, H: number, hiIdx: number, ptOffset: number) {
+  const pt = ptOffset + 24, pb = 44, pl = 48, pr = 32;
+  const pw = W - pl - pr, ph = H - pt - pb;
+  const max = niceMax(Math.max(...values, 1));
+  const n = labels.length;
+  const barW = Math.min(80, (pw / n) * 0.6);
+  const gap = pw / n;
+  const autoHi = values.indexOf(Math.max(...values));
+  const hiI = hiIdx === -1 ? autoHi : hiIdx;
   return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      {Array.from({ length: GRID + 1 }, (_, i) => {
-        const y = pt + (ph * i) / GRID;
-        return (
-          <g key={i}>
-            <line x1={pl} x2={pl + pw} y1={y} y2={y} stroke={theme.stroke} strokeWidth={1} />
-            <text x={pl - 8} y={y + 4} textAnchor="end" fontSize={10} fill={theme.mutedOnLight}>{fmt(max * (1 - i / GRID))}</text>
-          </g>
-        );
+    <g>
+      {[0, 0.25, 0.5, 0.75, 1].map((f, i) => {
+        const y = pt + ph * f;
+        return <line key={i} x1={pl} x2={pl + pw} y1={y} y2={y} stroke={C.gridLine} strokeWidth={1} />;
       })}
-      {rows.map((row, i) => {
-        const barH = Math.max(2, (row.value / max) * ph);
+      {labels.map((lbl, i) => {
+        const bh = Math.max(2, (values[i] / max) * ph);
         const x = pl + gap * i + gap / 2 - barW / 2;
-        const y = pt + ph - barH;
-        const color = cols[i % cols.length];
+        const y = pt + ph - bh;
+        const fill = i === hiI ? C.barAccent : C.barFill;
+        const stroke = i === hiI ? '#8a9600' : C.barStroke;
         return (
           <g key={i}>
-            <rect x={x} y={y} width={barW} height={barH} fill={color} />
-            <text x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize={11} fontWeight="600" fill={color}>{fmt(row.value)}</text>
-            <text x={x + barW / 2} y={pt + ph + 22} textAnchor="middle" fontSize={11} fill={theme.bodyOnLight}>{row.label}</text>
+            <rect x={x} y={y} width={barW} height={bh} fill={fill} stroke={stroke} strokeWidth={0.8} />
+            <text x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize={11} fontWeight="600" fill={C.valueText} fontFamily="'Saans','Helvetica Neue',sans-serif">{fmt(values[i])}</text>
+            <text x={x + barW / 2} y={pt + ph + 22} textAnchor="middle" fontSize={11} fill={C.subtitle} fontFamily="'Saans','Helvetica Neue',sans-serif">{lbl}</text>
           </g>
         );
       })}
-      <line x1={pl} x2={pl + pw} y1={pt + ph} y2={pt + ph} stroke={theme.stroke} strokeWidth={1.5} />
-    </svg>
+      <line x1={pl} x2={pl + pw} y1={pt + ph} y2={pt + ph} stroke={C.axisTick} strokeWidth={1.5} />
+    </g>
   );
 }
 
-// ─── Horizontal Bar ──────────────────────────────────────────────────────────
-function HorizBar({ rows, w, h, theme }: { rows: ChartRow[]; w: number; h: number; theme: SlideTheme }) {
-  const cols = palette(theme);
-  const pt = 16, pb = 16, labelW = 160;
-  const pl = labelW + 20, pr = 80;
-  const ph = h - pt - pb;
-  const pw = w - pl - pr;
-  const max = niceMax(Math.max(...rows.map(r => r.value), 1));
-  const barH = Math.min(36, (ph / rows.length) * 0.6);
-  const gap = ph / rows.length;
+function renderRanked(labels: string[], values: number[], C: Record<string, string>, W: number, H: number, hiIdx: number, ptOffset: number) {
+  const pt = ptOffset + 16, pb = 16, labelW = Math.min(200, W * 0.28);
+  const pl = labelW + 16, pr = 72;
+  const ph = H - pt - pb;
+  const max = niceMax(Math.max(...values, 1));
+  const n = labels.length;
+  const barH = Math.min(32, (ph / n) * 0.6);
+  const gap = ph / n;
+  const autoHi = values.indexOf(Math.max(...values));
+  const hiI = hiIdx === -1 ? autoHi : hiIdx;
   return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      {rows.map((row, i) => {
-        const bw = Math.max(2, (row.value / max) * pw);
+    <g>
+      {labels.map((lbl, i) => {
+        const bw = Math.max(2, (values[i] / max) * (W - pl - pr));
         const y = pt + gap * i + gap / 2 - barH / 2;
-        const color = cols[i % cols.length];
+        const fill = i === hiI ? C.barAccent : C.barFill;
+        const stroke = i === hiI ? '#8a9600' : C.barStroke;
         return (
           <g key={i}>
-            <text x={pl - 12} y={y + barH / 2 + 4} textAnchor="end" fontSize={12} fill={theme.bodyOnLight}>{row.label}</text>
-            <rect x={pl} y={y} width={bw} height={barH} fill={color} />
-            <text x={pl + bw + 8} y={y + barH / 2 + 4} fontSize={11} fontWeight="600" fill={color}>{fmt(row.value)}</text>
+            <text x={pl - 10} y={y + barH / 2 + 4} textAnchor="end" fontSize={12} fill={C.title} fontFamily="'Saans','Helvetica Neue',sans-serif">{lbl}</text>
+            <rect x={pl} y={y} width={bw} height={barH} fill={fill} stroke={stroke} strokeWidth={0.8} />
+            <text x={pl + bw + 8} y={y + barH / 2 + 4} fontSize={11} fontWeight="600" fill={C.valueText} fontFamily="'Saans','Helvetica Neue',sans-serif">{fmt(values[i])}</text>
           </g>
         );
       })}
-    </svg>
+    </g>
   );
 }
 
-// ─── Pie Chart ───────────────────────────────────────────────────────────────
-function PieChart({ rows, w, h, theme }: { rows: ChartRow[]; w: number; h: number; theme: SlideTheme }) {
-  const cols = palette(theme);
-  const total = rows.reduce((s, r) => s + r.value, 0) || 1;
-  const r = Math.min(h / 2 - 20, w * 0.38);
-  const cx = r + 40, cy = h / 2;
-  const legendX = cx + r + 56;
+function renderLine(labels: string[], values: number[], C: Record<string, string>, W: number, H: number, ptOffset: number) {
+  const pt = ptOffset + 24, pb = 40, pl = 52, pr = 24;
+  const pw = W - pl - pr, ph = H - pt - pb;
+  const max = niceMax(Math.max(...values, 1));
+  const n = Math.max(labels.length - 1, 1);
+  const toX = (i: number) => pl + (i / n) * pw;
+  const toY = (v: number) => pt + ph - (v / max) * ph;
+  const pts = values.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+  return (
+    <g>
+      {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
+        <line key={i} x1={pl} x2={pl + pw} y1={pt + ph * f} y2={pt + ph * f} stroke={C.gridLine} strokeWidth={1} />
+      ))}
+      <polyline points={pts} fill="none" stroke={C.lineStroke} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+      {values.map((v, i) => (
+        <circle key={i} cx={toX(i)} cy={toY(v)} r={4} fill={C.lineStroke} />
+      ))}
+      {labels.map((l, i) => (
+        <text key={i} x={toX(i)} y={pt + ph + 20} textAnchor="middle" fontSize={11} fill={C.subtitle} fontFamily="'Saans','Helvetica Neue',sans-serif">{l}</text>
+      ))}
+      <line x1={pl} x2={pl + pw} y1={pt + ph} y2={pt + ph} stroke={C.axisTick} strokeWidth={1.5} />
+    </g>
+  );
+}
+
+function renderPie(labels: string[], values: number[], C: Record<string, string>, W: number, H: number, ptOffset: number) {
+  const total = values.reduce((s, v) => s + v, 0) || 1;
+  const cy = ptOffset + (H - ptOffset) / 2;
+  const r = Math.min((H - ptOffset) / 2 - 24, W * 0.3);
+  const cx = r + 48;
+  const legendX = cx + r + 48;
+  const fills = [C.barFill, C.lineStroke, C.barAccent, C.barStroke, C.axisTick];
   let angle = -Math.PI / 2;
   return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      {rows.map((row, i) => {
-        const sweep = (row.value / total) * Math.PI * 2;
+    <g>
+      {values.map((v, i) => {
+        const sweep = (v / total) * Math.PI * 2;
         const end = angle + sweep;
         const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
         const x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
         const large = sweep > Math.PI ? 1 : 0;
         const mid = angle + sweep / 2;
         const lx = cx + r * 0.62 * Math.cos(mid), ly = cy + r * 0.62 * Math.sin(mid);
-        const pct = Math.round((row.value / total) * 100);
-        const color = cols[i % cols.length];
+        const pct = Math.round((v / total) * 100);
+        const fill = fills[i % fills.length];
         angle = end;
         return (
           <g key={i}>
-            <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`} fill={color} stroke="white" strokeWidth={2} />
-            {pct > 4 && <text x={lx} y={ly + 4} textAnchor="middle" fontSize={12} fontWeight="700" fill="white">{pct}%</text>}
+            <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`} fill={fill} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+            {pct > 4 && <text x={lx} y={ly + 4} textAnchor="middle" fontSize={12} fontWeight="700" fill={i === 0 ? C.barStroke : '#fff'} fontFamily="'Saans','Helvetica Neue',sans-serif">{pct}%</text>}
           </g>
         );
       })}
-      {rows.map((row, i) => {
-        const rowH = 30, startY = cy - (rows.length * rowH) / 2;
-        const color = cols[i % cols.length];
+      {labels.map((lbl, i) => {
+        const rowH = 28, startY = cy - (labels.length * rowH) / 2;
         return (
           <g key={i} transform={`translate(${legendX}, ${startY + i * rowH})`}>
-            <rect width={14} height={14} y={2} fill={color} />
-            <text x={22} y={13} fontSize={13} fill={theme.bodyOnLight}>{row.label}</text>
-            <text x={260} y={13} fontSize={13} fontWeight="600" fill={color} textAnchor="end">{fmt(row.value)}</text>
+            <rect width={12} height={12} y={2} fill={fills[i % fills.length]} />
+            <text x={20} y={13} fontSize={13} fill={C.title} fontFamily="'Saans','Helvetica Neue',sans-serif">{lbl}</text>
           </g>
         );
       })}
-    </svg>
+    </g>
   );
 }
 
-// ─── Line Chart ──────────────────────────────────────────────────────────────
-function LineChart({ series, w, h, theme }: { series: ChartLineSeries[]; w: number; h: number; theme: SlideTheme }) {
-  const cols = palette(theme);
-  const pt = 28, pb = series.length > 1 ? 52 : 40, pl = 56, pr = 24;
-  const pw = w - pl - pr, ph = h - pt - pb;
-  const allY = series.flatMap(s => s.pts.map(p => p.y));
-  const maxY = niceMax(Math.max(...allY, 1));
-  const labels = series[0]?.pts.map(p => String(p.x)) ?? [];
-  const n = Math.max(labels.length - 1, 1);
-  const GRID = 4;
-  const toX = (i: number) => pl + (i / n) * pw;
-  const toY = (v: number) => pt + ph - (v / maxY) * ph;
+function renderStat(value: string, label: string, sub: string, C: Record<string, string>, W: number, H: number, ptOffset: number) {
+  const cy = ptOffset + (H - ptOffset) / 2;
   return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      {Array.from({ length: GRID + 1 }, (_, i) => {
-        const y = pt + (ph * i) / GRID;
-        return (
-          <g key={i}>
-            <line x1={pl} x2={pl + pw} y1={y} y2={y} stroke={theme.stroke} strokeWidth={1} />
-            <text x={pl - 8} y={y + 4} textAnchor="end" fontSize={10} fill={theme.mutedOnLight}>{fmt(maxY * (1 - i / GRID))}</text>
-          </g>
-        );
-      })}
-      {series.map((s, si) => {
-        const color = cols[si % cols.length];
-        const pts = s.pts.map((p, i) => `${toX(i)},${toY(p.y)}`).join(' ');
-        return (
-          <g key={si}>
-            <polyline points={pts} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
-            {s.pts.map((p, i) => <circle key={i} cx={toX(i)} cy={toY(p.y)} r={4} fill={color} />)}
-          </g>
-        );
-      })}
-      {labels.map((l, i) => (
-        <text key={i} x={toX(i)} y={pt + ph + 20} textAnchor="middle" fontSize={11} fill={theme.bodyOnLight}>{l}</text>
-      ))}
-      <line x1={pl} x2={pl + pw} y1={pt + ph} y2={pt + ph} stroke={theme.stroke} strokeWidth={1.5} />
-      {series.length > 1 && series.map((s, i) => (
-        <g key={i} transform={`translate(${pl + i * 160}, ${h - 12})`}>
-          <line x1={0} x2={16} y1={6} y2={6} stroke={cols[i % cols.length]} strokeWidth={2.5} />
-          <circle cx={8} cy={6} r={3} fill={cols[i % cols.length]} />
-          <text x={22} y={10} fontSize={11} fill={theme.bodyOnLight}>{s.name}</text>
+    <g>
+      <text x={W / 2} y={cy - 10} textAnchor="middle" fontSize={96} fontWeight="700" fill={C.barAccent} fontFamily="'Saans','Helvetica Neue',sans-serif">{value}</text>
+      <text x={W / 2} y={cy + 56} textAnchor="middle" fontSize={20} fill={C.title} fontFamily="'Saans','Helvetica Neue',sans-serif">{label}</text>
+      {sub && <text x={W / 2} y={cy + 88} textAnchor="middle" fontSize={14} fill={C.subtitle} fontFamily="'Saans','Helvetica Neue',sans-serif">{sub}</text>}
+    </g>
+  );
+}
+
+function renderTable(headers: string[], rows: string[][], C: Record<string, string>, W: number, H: number, ptOffset: number) {
+  const colW = (W - 80) / (headers.length || 1);
+  const rowH = 36;
+  const startY = ptOffset + 24;
+  return (
+    <g>
+      {headers.map((h, i) => (
+        <g key={i}>
+          <rect x={40 + i * colW} y={startY} width={colW} height={rowH} fill={C.barStroke} />
+          <text x={40 + i * colW + 12} y={startY + 23} fontSize={12} fontWeight="600" fill="#fff" fontFamily="'Saans Mono','DM Mono',monospace">{h.toUpperCase()}</text>
         </g>
       ))}
-    </svg>
-  );
-}
-
-// ─── Stacked Bar ─────────────────────────────────────────────────────────────
-function StackedBar({ cols: colLabels, segs, w, h, theme }: { cols: string[]; segs: ChartStkSeg[]; w: number; h: number; theme: SlideTheme }) {
-  const colors = palette(theme);
-  const pt = 28, pb = segs.length > 1 ? 52 : 44, pl = 56, pr = 24;
-  const pw = w - pl - pr, ph = h - pt - pb;
-  const totals = colLabels.map((_, i) => segs.reduce((s, seg) => s + (seg.values[i] ?? 0), 0));
-  const max = niceMax(Math.max(...totals, 1));
-  const barW = Math.min(72, (pw / colLabels.length) * 0.55);
-  const gap = pw / colLabels.length;
-  const GRID = 4;
-  return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      {Array.from({ length: GRID + 1 }, (_, i) => {
-        const y = pt + (ph * i) / GRID;
-        return (
-          <g key={i}>
-            <line x1={pl} x2={pl + pw} y1={y} y2={y} stroke={theme.stroke} strokeWidth={1} />
-            <text x={pl - 8} y={y + 4} textAnchor="end" fontSize={10} fill={theme.mutedOnLight}>{fmt(max * (1 - i / GRID))}</text>
-          </g>
-        );
-      })}
-      {colLabels.map((col, ci) => {
-        const x = pl + gap * ci + gap / 2 - barW / 2;
-        let yo = pt + ph;
-        return (
-          <g key={ci}>
-            {segs.map((seg, si) => {
-              const val = seg.values[ci] ?? 0;
-              const bh = (val / max) * ph;
-              yo -= bh;
-              return <rect key={si} x={x} y={yo} width={barW} height={bh} fill={colors[si % colors.length]} />;
-            })}
-            <text x={x + barW / 2} y={pt + ph + 22} textAnchor="middle" fontSize={11} fill={theme.bodyOnLight}>{col}</text>
-          </g>
-        );
-      })}
-      <line x1={pl} x2={pl + pw} y1={pt + ph} y2={pt + ph} stroke={theme.stroke} strokeWidth={1.5} />
-      {segs.length > 1 && segs.map((seg, i) => (
-        <g key={i} transform={`translate(${pl + i * 160}, ${h - 12})`}>
-          <rect width={12} height={12} fill={colors[i % colors.length]} />
-          <text x={18} y={10} fontSize={11} fill={theme.bodyOnLight}>{seg.label}</text>
+      {rows.map((row, ri) => (
+        <g key={ri}>
+          <rect x={40} y={startY + (ri + 1) * rowH} width={W - 80} height={rowH} fill={ri % 2 === 0 ? '#fff' : C.bg} />
+          {row.map((cell, ci) => (
+            <text key={ci} x={40 + ci * colW + 12} y={startY + (ri + 1) * rowH + 23} fontSize={13} fill={C.title} fontFamily="'Saans','Helvetica Neue',sans-serif">{cell}</text>
+          ))}
         </g>
       ))}
-    </svg>
+    </g>
   );
 }
 
-// ─── Slope Chart ─────────────────────────────────────────────────────────────
-function SlopeChart({ rows, leftLabel, rightLabel, w, h, theme }: { rows: ChartSlopeRow[]; leftLabel: string; rightLabel: string; w: number; h: number; theme: SlideTheme }) {
-  const colors = palette(theme);
-  const pt = 48, pb = 16, nameW = 140, valueW = 56;
-  const ph = h - pt - pb;
-  const lx = nameW + valueW + 20, rx = w - valueW - 40;
-  const allVals = rows.flatMap(r => [r.left, r.right]);
-  const minV = Math.min(...allVals, 0);
-  const maxV = niceMax(Math.max(...allVals, 1));
-  const range = maxV - minV || 1;
-  const toY = (v: number) => pt + ph - ((v - minV) / range) * ph;
-  return (
-    <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      <text x={lx} y={pt - 14} textAnchor="middle" fontSize={13} fontWeight="600" fill={theme.textOnLight}>{leftLabel}</text>
-      <text x={rx} y={pt - 14} textAnchor="middle" fontSize={13} fontWeight="600" fill={theme.textOnLight}>{rightLabel}</text>
-      <line x1={lx} x2={lx} y1={pt} y2={pt + ph} stroke={theme.stroke} strokeWidth={1} />
-      <line x1={rx} x2={rx} y1={pt} y2={pt + ph} stroke={theme.stroke} strokeWidth={1} />
-      {rows.map((row, i) => {
-        const y1 = toY(row.left), y2 = toY(row.right);
-        const color = colors[i % colors.length];
-        return (
-          <g key={i}>
-            <line x1={lx} x2={rx} y1={y1} y2={y2} stroke={color} strokeWidth={2} strokeOpacity={0.85} />
-            <circle cx={lx} cy={y1} r={5} fill={color} />
-            <circle cx={rx} cy={y2} r={5} fill={color} />
-            <text x={lx - 10} y={y1 + 4} textAnchor="end" fontSize={11} fontWeight="600" fill={color}>{fmt(row.left)}</text>
-            <text x={rx + 10} y={y2 + 4} fontSize={11} fontWeight="600" fill={color}>{fmt(row.right)}</text>
-            <text x={nameW + valueW} y={y1 + 4} textAnchor="end" fontSize={11} fill={theme.bodyOnLight}>{row.name}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ─── Dispatcher ──────────────────────────────────────────────────────────────
-function renderChart(state: ChartSlideData['chartwizState'], w: number, h: number, theme: SlideTheme): React.ReactElement | null {
-  const ct = state.chartType;
-  if (ct === 'vertical' && state.vertRows?.length) return <VertBar rows={state.vertRows} w={w} h={h} theme={theme} />;
-  if (ct === 'horizontal' && state.compRows?.length) return <HorizBar rows={state.compRows} w={w} h={h} theme={theme} />;
-  if (ct === 'pie' && state.pieRows?.length) return <PieChart rows={state.pieRows} w={w} h={h} theme={theme} />;
-  if (ct === 'line' && state.lineSeries?.length) return <LineChart series={state.lineSeries} w={w} h={h} theme={theme} />;
-  if (ct === 'stacked' && state.stkCols?.length) return <StackedBar cols={state.stkCols} segs={state.stkSegs ?? []} w={w} h={h} theme={theme} />;
-  if (ct === 'slope' && state.slopeRows?.length) return <SlopeChart rows={state.slopeRows} leftLabel={state.slopeLeftLabel ?? 'Before'} rightLabel={state.slopeRightLabel ?? 'After'} w={w} h={h} theme={theme} />;
-  return null;
-}
-
-const CHART_TYPE_LABELS: Record<string, string> = {
-  vertical: 'Bar chart', horizontal: 'Horizontal bar', line: 'Line chart',
-  pie: 'Pie chart', stacked: 'Stacked bar', slope: 'Slope chart',
-};
-
-// ─── Slide ───────────────────────────────────────────────────────────────────
+// ── Main Slide ────────────────────────────────────────────────────────────────
 export default function ChartSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   const s = data.textScale ?? 1;
-  const chartwizUrl = buildChartwizUrl(data.chartwizState);
-  const chartTypeLabel = CHART_TYPE_LABELS[data.chartwizState.chartType] ?? 'Chart';
-  const hasData = hasChartData(data.chartwizState);
-  const hasDesc = !!data.description;
+  const cw = data.chartwizState;
+  const hasData = !!cw.data?.trim();
+  const chartwizUrl = (() => {
+    try {
+      const snap = {
+        type: cw.chartType, title: cw.title, subtitle: cw.subtitle,
+        subcopy: cw.subcopy, data: cw.data, colorMode: cw.colorMode,
+        painting: cw.painting, layout: cw.layout, showLogo: cw.showLogo,
+        showSource: cw.showSource, highlightIndex: cw.highlightIndex,
+        w: cw.w, h: cw.h,
+      };
+      return `https://airops-chartwiz.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
+    } catch { return 'https://airops-chartwiz.vercel.app/'; }
+  })();
 
-  const HEADER_H = 96;
-  const BOTTOM_H = 72;
-  const SIDE_PAD = 64;
-  const DESC_W = 256;
+  const C = cw.painting ? PAINTING_COLORS : (CW_COLORS[cw.colorMode] ?? CW_COLORS.dark);
+  const parsed = parseData(cw.data, cw.chartType);
 
-  // chart SVG dimensions — computed from available space
-  const chartAreaX = hasDesc ? SIDE_PAD + DESC_W + 17 : SIDE_PAD;
-  const chartW = 1280 - chartAreaX - SIDE_PAD;
-  const chartH = 720 - HEADER_H - BOTTOM_H - 40;
+  // Slide layout constants
+  const W = 1280, H = 720;
+  const HEADER_H = 88;
+
+  // Title area height — matches Chartwiz proportions scaled to landscape
+  const titleFontSize = Math.round(44 * s);
+  const subtitleFontSize = Math.round(16 * s);
+  const titleLines = (cw.title || '').split('\n').length;
+  const titleBlockH = titleLines * (titleFontSize * 1.2) + (cw.subtitle ? subtitleFontSize * 1.6 + 12 : 0) + 64;
+  const subcopyH = cw.subcopy ? Math.round(52 * s) : 0;
+  const chartOffsetY = HEADER_H + titleBlockH + subcopyH;
+  const chartH = H - chartOffsetY - 48;
+
+  const isOnPainting = !!cw.painting;
+  const paintingUrl = cw.painting ? `https://airops-chartwiz.vercel.app/paintings/${cw.painting}.jpg` : null;
 
   return (
     <div
       style={{
-        width: 1280, height: 720,
-        background: theme.lightBg,
+        width: W, height: H,
+        background: isOnPainting ? '#111' : C.bg,
         position: 'relative', overflow: 'hidden',
         pointerEvents: interactive ? 'auto' : 'none',
-        fontFamily: '"Saans", sans-serif',
       }}
     >
-      {!data.hideLogo && (
-        <div style={{ position: 'absolute', bottom: 32, left: 48, zIndex: 10 }}>
-          <AirOpsLogo color={theme.logoOnLight} width={80} />
-        </div>
+      {/* Painting background */}
+      {paintingUrl && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={paintingUrl}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
+        </>
       )}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: theme.accent, zIndex: 10 }} />
 
-      {/* Header */}
+      {/* Header strip */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: HEADER_H,
-        display: 'flex', alignItems: 'center',
-        paddingLeft: SIDE_PAD, paddingRight: 48,
-        justifyContent: 'space-between',
-        borderBottom: `1px solid ${theme.stroke}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        paddingLeft: 56, paddingRight: 40,
+        borderBottom: `1px solid ${C.border}`,
+        zIndex: 2,
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: theme.accentMid }}>
-            {chartTypeLabel}
-          </div>
-          <div
-            {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
-            style={{ fontFamily: '"Serrif VF", serif', fontSize: Math.round(36 * s), fontWeight: 400, color: theme.textOnLight, letterSpacing: '-0.02em', lineHeight: 1.1, outline: 'none', cursor: onUpdate ? 'text' : 'default' }}
-          />
+        <div style={{ fontFamily: '"Saans Mono","DM Mono",monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.lineStroke }}>
+          {cw.chartType === 'bar' ? 'Bar Chart' : cw.chartType === 'ranked' ? 'Ranked Bar' : cw.chartType === 'line' ? 'Line Chart' : cw.chartType === 'pie' ? 'Pie Chart' : cw.chartType === 'stat' ? 'Stat' : cw.chartType === 'table' ? 'Table' : 'Data Viz'}
         </div>
         <a
           href={chartwizUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', background: theme.darkBg, color: theme.accent, fontFamily: '"Saans Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap', pointerEvents: interactive ? 'auto' : 'none' }}
+          style={{ padding: '8px 18px', background: isOnPainting ? 'rgba(0,0,0,0.5)' : C.barStroke, color: C.barAccent, fontFamily: '"Saans Mono","DM Mono",monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', flexShrink: 0, pointerEvents: interactive ? 'auto' : 'none' }}
         >
-          Open in Chartwiz ↗
+          Edit in Chartwiz ↗
         </a>
       </div>
 
-      {/* Body */}
-      <div style={{ position: 'absolute', top: HEADER_H, left: 0, right: 0, bottom: BOTTOM_H, display: 'flex' }}>
-        {/* Description panel */}
-        {hasDesc && (
-          <>
-            <div style={{ width: SIDE_PAD + DESC_W, flexShrink: 0, padding: `32px 24px 24px ${SIDE_PAD}px`, display: 'flex', alignItems: 'center' }}>
-              <div
-                {...richTextProps(data.description ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, description: html }))}
-                style={{ fontFamily: '"Saans", sans-serif', fontSize: Math.round(14 * s), color: theme.bodyOnLight, lineHeight: 1.65, borderLeft: `3px solid ${theme.accentMid}`, paddingLeft: 16, outline: 'none', cursor: onUpdate ? 'text' : 'default' }}
-              />
-            </div>
-            <div style={{ width: 1, background: theme.stroke, flexShrink: 0, margin: '24px 0' }} />
-          </>
+      {/* SVG canvas for title + chart */}
+      <svg
+        width={W}
+        height={H - HEADER_H}
+        style={{ position: 'absolute', top: HEADER_H, left: 0, zIndex: 1 }}
+      >
+        {/* Title */}
+        {cw.title && (
+          <text
+            x={56} y={titleFontSize + 36}
+            fontSize={titleFontSize}
+            fontWeight="400"
+            fill={C.title}
+            fontFamily="Georgia, 'Serrif VF', serif"
+            letterSpacing="-0.02em"
+          >
+            {cw.title}
+          </text>
         )}
 
-        {/* Chart area */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `20px ${SIDE_PAD}px 20px ${hasDesc ? 32 : SIDE_PAD}px` }}>
-          {hasData ? (
-            renderChart(data.chartwizState, chartW, chartH, theme)
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div style={{ fontFamily: '"Serrif VF", serif', fontSize: 24, color: theme.mutedOnLight, letterSpacing: '-0.01em' }}>
-                Build your chart in Chartwiz, then paste the link back
-              </div>
-              <a
-                href={chartwizUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                style={{ padding: '12px 28px', background: theme.darkBg, color: theme.accent, fontFamily: '"Saans Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, textDecoration: 'none', pointerEvents: interactive ? 'auto' : 'none' }}
-              >
-                Open in Chartwiz ↗
-              </a>
-            </div>
-          )}
+        {/* Subtitle */}
+        {cw.subtitle && (
+          <text
+            x={56}
+            y={titleFontSize + 36 + titleFontSize * 1.2 * titleLines + 8}
+            fontSize={subtitleFontSize}
+            fill={C.subtitle}
+            fontFamily="'Saans','Helvetica Neue',sans-serif"
+          >
+            {cw.subtitle}
+          </text>
+        )}
+
+        {/* Subcopy callout box */}
+        {cw.subcopy && (
+          <g transform={`translate(56, ${titleBlockH})`}>
+            <rect x={0} y={0} width={W - 112} height={subcopyH} fill="rgba(255,255,255,0.9)" stroke={C.border} strokeWidth={1} />
+            <text x={16} y={subcopyH / 2 + 6} fontSize={Math.round(13 * s)} fill="#000d05" fontFamily="'Saans','Helvetica Neue',sans-serif">{cw.subcopy}</text>
+          </g>
+        )}
+
+        {/* Chart */}
+        {hasData ? (
+          <>
+            {cw.chartType === 'bar' && renderBar(parsed.labels, parsed.values, C, W, H - HEADER_H, cw.highlightIndex, chartOffsetY - HEADER_H)}
+            {cw.chartType === 'ranked' && renderRanked(parsed.labels, parsed.values, C, W, H - HEADER_H, cw.highlightIndex, chartOffsetY - HEADER_H)}
+            {cw.chartType === 'line' && renderLine(parsed.labels, parsed.values, C, W, H - HEADER_H, chartOffsetY - HEADER_H)}
+            {cw.chartType === 'pie' && renderPie(parsed.labels, parsed.values, C, W, H - HEADER_H, chartOffsetY - HEADER_H)}
+            {cw.chartType === 'stat' && renderStat(parsed.value ?? '—', parsed.label ?? '', parsed.sub ?? '', C, W, H - HEADER_H, chartOffsetY - HEADER_H)}
+            {cw.chartType === 'table' && parsed.headers && renderTable(parsed.headers, parsed.rows ?? [], C, W, H - HEADER_H, chartOffsetY - HEADER_H)}
+          </>
+        ) : (
+          <text x={W / 2} y={(H - HEADER_H) / 2} textAnchor="middle" fontSize={18} fill={C.subtitle} fontFamily="Georgia,serif">
+            Build your chart in Chartwiz, then paste the URL here
+          </text>
+        )}
+
+        {/* Source line */}
+        {cw.showSource && cw.subtitle && (
+          <text
+            x={56} y={H - HEADER_H - 24}
+            fontSize={10} fontWeight="500" letterSpacing="0.06em"
+            fill={C.subtitle}
+            fontFamily="'Saans Mono','DM Mono',monospace"
+          >
+            {cw.subtitle.toUpperCase()}
+          </text>
+        )}
+      </svg>
+
+      {/* AirOps Research logo */}
+      {cw.showLogo && !data.hideLogo && (
+        <div style={{ position: 'absolute', bottom: 24, right: 40, zIndex: 2 }}>
+          <AirOpsLogo color={C.logoFill} width={72} />
         </div>
-      </div>
+      )}
+
+      {/* Slide headline override (shown in header) */}
+      {data.headline && data.headline !== cw.title && (
+        <div
+          {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
+          style={{ position: 'absolute', top: HEADER_H + 8, left: 56, right: 200, fontSize: Math.round(36 * s), fontFamily: '"Serrif VF",Georgia,serif', color: C.title, fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1.1, outline: 'none', cursor: onUpdate ? 'text' : 'default', zIndex: 3, display: 'none' }}
+        />
+      )}
+
+      {/* Bottom accent */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: '#00ff64', zIndex: 10 }} />
     </div>
   );
 }

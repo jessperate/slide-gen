@@ -303,31 +303,25 @@ export interface SpeakerSlideData {
   textScale?: number;
 }
 
-export interface ChartRow { label: string; value: number; }
-export interface ChartLineSeries { name: string; pts: Array<{ x: string; y: number }>; }
-export interface ChartSlopeRow { name: string; left: number; right: number; }
-export interface ChartStkSeg { label: string; values: number[]; }
-
 export interface ChartSlideData {
   id: string;
   type: 'chart';
   headline: string;
   description?: string;
   chartwizState: {
-    chartType: 'vertical' | 'horizontal' | 'line' | 'pie' | 'stacked' | 'slope';
-    headline: string;
-    description?: string;
-    yAxisLabel?: string;
-    xAxisLabel?: string;
-    vertRows?: ChartRow[];
-    compRows?: ChartRow[];
-    pieRows?: ChartRow[];
-    lineSeries?: ChartLineSeries[];
-    stkCols?: string[];
-    stkSegs?: ChartStkSeg[];
-    slopeRows?: ChartSlopeRow[];
-    slopeLeftLabel?: string;
-    slopeRightLabel?: string;
+    chartType: 'bar' | 'line' | 'ranked' | 'stat' | 'table' | 'pie';
+    title: string;
+    subtitle: string;
+    subcopy: string;
+    data: string;
+    colorMode: 'light' | 'dark' | 'lime' | 'midnight';
+    painting: string;
+    layout: 'standard' | 'split';
+    showLogo: boolean;
+    showSource: boolean;
+    highlightIndex: number;
+    w: number;
+    h: number;
   };
   hideLogo?: boolean;
   logos?: LogoOverlay[];
@@ -681,17 +675,21 @@ export const defaultSlideByType: Record<string, SlideData> = {
     id: 'new',
     type: 'chart',
     headline: 'Chart headline',
-    description: 'Supporting insight or context for this chart.',
+    description: '',
     chartwizState: {
-      chartType: 'vertical',
-      headline: 'Chart headline',
-      description: '',
-      vertRows: [
-        { label: 'Category A', value: 80 },
-        { label: 'Category B', value: 60 },
-        { label: 'Category C', value: 45 },
-        { label: 'Category D', value: 30 },
-      ],
+      chartType: 'bar',
+      title: '',
+      subtitle: '',
+      subcopy: '',
+      data: '',
+      colorMode: 'dark',
+      painting: '',
+      layout: 'standard',
+      showLogo: true,
+      showSource: true,
+      highlightIndex: -1,
+      w: 1080,
+      h: 1080,
     },
   },
   table: {

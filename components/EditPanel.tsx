@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import AirOpsLogo from '@/components/AirOpsLogo';
-import LZString from 'lz-string';
 import {
   SlideData,
   LogoOverlay,
@@ -1609,51 +1608,45 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
 
       case 'chart': {
         const chartSlide = slide as ChartSlideData;
+
+        // Build Chartwiz URL from current state
         const chartwizUrl = (() => {
           try {
-            const fullState = {
-              theme: 'mint', size: 'landscape', logoType: 'airops',
-              showStats: false, showChart: true, border: true, highlight: '',
-              opts: { grid: true, legend: true, labels: true, yMin: '', yMax: '' },
-              yAxisLabel: '', xAxisLabel: '',
-              refLine: { enabled: false, value: 50, label: 'Reference' },
-              statCards: [], compRows: [], vertRows: [], lineSeries: [],
-              pieRows: [], stkCols: [], stkSegs: [], slopeRows: [],
-              slopeLeftLabel: 'Before', slopeRightLabel: 'After', lineSmooth: false,
-              ...chartSlide.chartwizState,
+            const s = chartSlide.chartwizState;
+            const snap = {
+              type: s.chartType, title: s.title, subtitle: s.subtitle,
+              subcopy: s.subcopy, data: s.data, colorMode: s.colorMode,
+              painting: s.painting, layout: s.layout, showLogo: s.showLogo,
+              showSource: s.showSource, highlightIndex: s.highlightIndex,
+              w: s.w, h: s.h,
             };
-            return `https://airops-chartwiz.vercel.app/#s=${LZString.compressToEncodedURIComponent(JSON.stringify(fullState))}`;
+            return `https://airops-chartwiz.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
           } catch { return 'https://airops-chartwiz.vercel.app/'; }
         })();
 
+        // Parse a pasted Chartwiz URL (?data=base64)
         const handleChartwizLink = (raw: string) => {
           try {
-            const hash = raw.includes('#s=') ? raw.split('#s=')[1] : raw.trim();
-            const decoded = LZString.decompressFromEncodedURIComponent(hash);
-            if (!decoded) return;
-            const parsed = JSON.parse(decoded);
-            // Extract only the chartwizState-relevant fields
-            const { chartType, headline: cwHeadline, description: cwDesc,
-              vertRows, compRows, pieRows, lineSeries, stkCols, stkSegs,
-              slopeRows, slopeLeftLabel, slopeRightLabel, yAxisLabel, xAxisLabel,
-            } = parsed;
+            const match = raw.match(/[?&]data=([^&#]+)/);
+            if (!match) return;
+            const parsed = JSON.parse(decodeURIComponent(escape(atob(match[1].replace(/ /g, '+')))));
             update({
-              ...(cwHeadline && { headline: cwHeadline }),
-              ...(cwDesc !== undefined && { description: cwDesc }),
+              ...(parsed.title && { headline: parsed.title }),
               chartwizState: {
                 ...chartSlide.chartwizState,
-                ...(chartType && { chartType }),
-                ...(vertRows && { vertRows }),
-                ...(compRows && { compRows }),
-                ...(pieRows && { pieRows }),
-                ...(lineSeries && { lineSeries }),
-                ...(stkCols && { stkCols }),
-                ...(stkSegs && { stkSegs }),
-                ...(slopeRows && { slopeRows }),
-                ...(slopeLeftLabel && { slopeLeftLabel }),
-                ...(slopeRightLabel && { slopeRightLabel }),
-                ...(yAxisLabel !== undefined && { yAxisLabel }),
-                ...(xAxisLabel !== undefined && { xAxisLabel }),
+                chartType: parsed.type ?? chartSlide.chartwizState.chartType,
+                title: parsed.title ?? '',
+                subtitle: parsed.subtitle ?? '',
+                subcopy: parsed.subcopy ?? '',
+                data: parsed.data ?? '',
+                colorMode: parsed.colorMode ?? 'dark',
+                painting: parsed.painting ?? '',
+                layout: parsed.layout ?? 'standard',
+                showLogo: parsed.showLogo ?? true,
+                showSource: parsed.showSource ?? true,
+                highlightIndex: parsed.highlightIndex ?? -1,
+                w: parsed.w ?? 1080,
+                h: parsed.h ?? 1080,
               },
             } as Partial<ChartSlideData>);
           } catch {
