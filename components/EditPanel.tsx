@@ -1627,9 +1627,13 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
         // Parse a pasted Chartwiz URL (?data=base64)
         const handleChartwizLink = (raw: string) => {
           try {
-            const match = raw.match(/[?&]data=([^&#]+)/);
+            const match = raw.match(/[?&]data=([^&#\s]+)/);
             if (!match) return;
-            const parsed = JSON.parse(decodeURIComponent(escape(atob(match[1].replace(/ /g, '+')))));
+            // URL-decode first, then base64 decode with UTF-8 support
+            const b64 = decodeURIComponent(match[1]).replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(b64);
+            const bytes = new Uint8Array([...binary].map(c => c.charCodeAt(0)));
+            const parsed = JSON.parse(new TextDecoder().decode(bytes));
             update({
               ...(parsed.title && { headline: parsed.title }),
               ...(parsed.subtitle !== undefined && { subheadline: parsed.subtitle }),
@@ -1700,8 +1704,9 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               <label style={labelStyle}>Paste Chartwiz link to sync back</label>
               <input
                 type="text"
-                placeholder="https://data-viz-gen.vercel.app/#s=…"
+                placeholder="https://data-viz-gen.vercel.app/?data=…"
                 style={{ ...inputStyle, fontSize: 11 }}
+                onPaste={(e) => { const text = e.clipboardData.getData('text'); setTimeout(() => handleChartwizLink(text), 0); }}
                 onChange={(e) => handleChartwizLink(e.target.value)}
               />
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 6, lineHeight: 1.5 }}>
