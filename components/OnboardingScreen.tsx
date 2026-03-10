@@ -87,8 +87,8 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
         const data = await res.json();
         if (!res.ok || !data.slides) throw new Error(data.error || 'Failed');
         onGenerate(data.slides);
-      } catch {
-        setError('Something went wrong — please try again.');
+      } catch (err) {
+        setError('Error: ' + (err instanceof Error ? err.message : String(err)));
         setLoading(false);
       }
       return;

@@ -133,7 +133,8 @@ First, count the total number of slides in this PDF. Then produce exactly that m
 
     return NextResponse.json({ slides });
   } catch (err) {
-    console.error('Reformat PDF error:', err);
-    return NextResponse.json({ error: 'Failed to reformat PDF' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Reformat PDF error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
