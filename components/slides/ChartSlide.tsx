@@ -277,8 +277,8 @@ export default function ChartSlide({ data, interactive = true, onUpdate, theme =
         showSource: cw.showSource, highlightIndex: cw.highlightIndex,
         w: cw.w, h: cw.h,
       };
-      return `https://airops-chartwiz.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
-    } catch { return 'https://airops-chartwiz.vercel.app/'; }
+      return `https://data-viz-gen.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
+    } catch { return 'https://data-viz-gen.vercel.app/'; }
   })();
 
   const C = cw.painting ? PAINTING_COLORS : (CW_COLORS[cw.colorMode] ?? CW_COLORS.dark);
@@ -292,13 +292,14 @@ export default function ChartSlide({ data, interactive = true, onUpdate, theme =
   const titleFontSize = Math.round(44 * s);
   const subtitleFontSize = Math.round(16 * s);
   const titleLines = (cw.title || '').split('\n').length;
-  const titleBlockH = titleLines * (titleFontSize * 1.2) + (cw.subtitle ? subtitleFontSize * 1.6 + 12 : 0) + 64;
+  const subheadlineH = data.subheadline ? subtitleFontSize * 1.6 + 8 : 0;
+  const titleBlockH = titleLines * (titleFontSize * 1.2) + (cw.subtitle ? subtitleFontSize * 1.6 + 12 : 0) + subheadlineH + 64;
   const subcopyH = cw.subcopy ? Math.round(52 * s) : 0;
   const chartOffsetY = HEADER_H + titleBlockH + subcopyH;
   const chartH = H - chartOffsetY - 48;
 
   const isOnPainting = !!cw.painting;
-  const paintingUrl = cw.painting ? `https://airops-chartwiz.vercel.app/paintings/${cw.painting}.jpg` : null;
+  const paintingUrl = cw.painting ? `https://data-viz-gen.vercel.app/paintings/${cw.painting}.jpg` : null;
 
   return (
     <div
@@ -374,6 +375,20 @@ export default function ChartSlide({ data, interactive = true, onUpdate, theme =
             fontFamily="'Saans','Helvetica Neue',sans-serif"
           >
             {cw.subtitle}
+          </text>
+        )}
+
+        {/* Slide-level subheadline (synced from chartwiz subtitle field) */}
+        {data.subheadline && (
+          <text
+            x={56}
+            y={titleFontSize + 36 + titleFontSize * 1.2 * titleLines + (cw.subtitle ? subtitleFontSize * 1.6 + 12 : 8) + subtitleFontSize * 1.6}
+            fontSize={Math.round(subtitleFontSize * 1.1)}
+            fill={C.title}
+            fontFamily="'Saans','Helvetica Neue',sans-serif"
+            opacity={0.75}
+          >
+            {data.subheadline}
           </text>
         )}
 

@@ -1620,8 +1620,8 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               showSource: s.showSource, highlightIndex: s.highlightIndex,
               w: s.w, h: s.h,
             };
-            return `https://airops-chartwiz.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
-          } catch { return 'https://airops-chartwiz.vercel.app/'; }
+            return `https://data-viz-gen.vercel.app/?data=${btoa(unescape(encodeURIComponent(JSON.stringify(snap))))}`;
+          } catch { return 'https://data-viz-gen.vercel.app/'; }
         })();
 
         // Parse a pasted Chartwiz URL (?data=base64)
@@ -1632,6 +1632,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             const parsed = JSON.parse(decodeURIComponent(escape(atob(match[1].replace(/ /g, '+')))));
             update({
               ...(parsed.title && { headline: parsed.title }),
+              ...(parsed.subtitle !== undefined && { subheadline: parsed.subtitle }),
               chartwizState: {
                 ...chartSlide.chartwizState,
                 chartType: parsed.type ?? chartSlide.chartwizState.chartType,
@@ -1666,10 +1667,10 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               />
             </div>
             <div style={sectionStyle}>
-              <label style={labelStyle}>Description</label>
+              <label style={labelStyle}>Subheadline</label>
               <textarea
-                value={chartSlide.description ?? ''}
-                onChange={(e) => update({ description: e.target.value })}
+                value={chartSlide.subheadline ?? ''}
+                onChange={(e) => update({ subheadline: e.target.value })}
                 rows={3}
                 style={inputStyle}
               />
@@ -1699,7 +1700,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
               <label style={labelStyle}>Paste Chartwiz link to sync back</label>
               <input
                 type="text"
-                placeholder="https://airops-chartwiz.vercel.app/#s=…"
+                placeholder="https://data-viz-gen.vercel.app/#s=…"
                 style={{ ...inputStyle, fontSize: 11 }}
                 onChange={(e) => handleChartwizLink(e.target.value)}
               />
