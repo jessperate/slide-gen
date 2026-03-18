@@ -18,6 +18,7 @@ import {
   BigQuoteSlideData,
   TwoColMediaSlideData,
   ContactSlideData,
+  FullImageSlideData,
   TeamSlideData,
   ChartSlideData,
   CaseStudySlideData,
@@ -853,7 +854,7 @@ function RemixIconPicker({ value, onChange }: { value: string; onChange: (icon: 
   );
 }
 
-const IMAGE_NATIVE_TYPES = new Set(['cover', 'quote', 'big-quote', 'two-col-media']);
+const IMAGE_NATIVE_TYPES = new Set(['cover', 'quote', 'big-quote', 'two-col-media', 'full-image']);
 
 export default function EditPanel({ slide, onChange, colorMode, onColorModeChange, slideColorMode, onSlideColorModeChange }: Props) {
   const [remixingForImage, setRemixingForImage] = useState(false);
@@ -1717,6 +1718,18 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
         );
       }
 
+      case 'full-image': {
+        const fi = slide as FullImageSlideData;
+        return (
+          <Field
+            label="Caption (optional)"
+            value={fi.caption ?? ''}
+            multiline
+            onChange={(v) => update({ caption: v || undefined } as Partial<SlideData>)}
+          />
+        );
+      }
+
       default:
         return null;
     }
@@ -1740,6 +1753,7 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
       case 'big-quote': return 'Big Quote';
       case 'two-col-media': return '2 Col + Media';
       case 'contact': return 'Contact';
+      case 'full-image': return 'Full Image';
       case 'team': return 'Team';
       case 'chart': return 'Data Viz';
       case 'table': return 'Table';
