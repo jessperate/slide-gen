@@ -28,7 +28,8 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
   const [contextUrl, setContextUrl] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [imagesOpen, setImagesOpen] = useState(false);
-  const [mode, setMode] = useState<'generate' | 'reformat'>('generate');
+  const [mode, setMode] = useState<'generate' | 'reformat' | 'from-url'>('generate');
+  const [sourceUrl, setSourceUrl] = useState('');
   const [pdfData, setPdfData] = useState<string | null>(null);
   const [pdfName, setPdfName] = useState('');
   const [pdfDragging, setPdfDragging] = useState(false);
@@ -94,6 +95,26 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
       return;
     }
 
+    if (mode === 'from-url') {
+      if (!sourceUrl.trim()) return;
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch('/api/from-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: sourceUrl.trim(), audience, tone }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.slides) throw new Error(data.error || 'Failed');
+        onGenerate(data.slides);
+      } catch (err) {
+        setError('Error: ' + (err instanceof Error ? err.message : String(err)));
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!topic.trim()) return;
     setLoading(true);
     setError('');
@@ -125,7 +146,10 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
     }
   };
 
-  const canSubmit = mode === 'reformat' ? !!pdfData : !!topic.trim();
+  const canSubmit =
+    mode === 'reformat' ? !!pdfData :
+    mode === 'from-url' ? !!sourceUrl.trim() :
+    !!topic.trim();
 
   return (
     <div
@@ -160,7 +184,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
       >
         {/* Mode toggle */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          {(['generate', 'reformat'] as const).map((m) => (
+          {(['generate', 'from-url', 'reformat'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -179,7 +203,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
                 transition: 'color 0.15s',
               }}
             >
-              {m === 'generate' ? 'Generate from scratch' : 'Reformat existing PDF'}
+              {m === 'generate' ? 'Generate from scratch' : m === 'from-url' ? 'From URL' : 'Reformat existing PDF'}
             </button>
           ))}
         </div>
@@ -196,7 +220,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             marginBottom: 8,
           }}
         >
-          {mode === 'generate' ? "What's your presentation about?" : 'Upload your existing deck'}
+          {mode === 'generate' ? "What's your presentation about?" : mode === 'from-url' ? 'Turn any page into a deck' : 'Upload your existing deck'}
         </div>
         <div
           style={{
@@ -209,11 +233,42 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
         >
           {mode === 'generate'
             ? "Describe your topic and we'll build a full deck with a narrative arc."
+            : mode === 'from-url'
+            ? "Paste any public URL — blog post, landing page, Notion doc — and we'll turn it into slides."
             : "We'll extract your content and reformat it in AirOps brand style."}
         </div>
 
-        {/* Topic textarea OR PDF upload */}
-        {mode === 'generate' ? (
+        {/* Topic textarea OR URL input OR PDF upload */}
+        {mode === 'from-url' ? (
+          <div style={{ marginBottom: 16 }}>
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="https://your-site.com/blog/article-or-landing-page"
+              autoFocus
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 0,
+                color: '#ffffff',
+                fontFamily: '"Saans", sans-serif',
+                fontSize: 15,
+                padding: '14px 16px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.4)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
+            />
+            <div style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 8, lineHeight: 1.5 }}>
+              Works with publicly accessible pages. Notion, blog posts, product pages, documentation — anything with text content.
+            </div>
+          </div>
+        ) : mode === 'generate' ? (
           <textarea
             ref={textareaRef}
             value={topic}
@@ -318,7 +373,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
         )}
 
         {/* Add context expander — generate mode only */}
-        <div style={{ marginBottom: 16, display: mode === 'reformat' ? 'none' : undefined }}>
+        <div style={{ marginBottom: 16, display: mode === 'generate' ? undefined : 'none' }}>
           <button
             onClick={() => setContextOpen((o) => !o)}
             style={{
@@ -430,7 +485,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
         </div>
 
         {/* Image upload expander — generate mode only */}
-        <div style={{ marginBottom: 16, display: mode === 'reformat' ? 'none' : undefined }}>
+        <div style={{ marginBottom: 16, display: mode === 'generate' ? undefined : 'none' }}>
           <button
             onClick={() => setImagesOpen((o) => !o)}
             style={{
@@ -618,12 +673,12 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             {loading ? (
               <>
                 <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>◌</span>
-                {mode === 'reformat' ? 'Reformatting your deck…' : 'Crafting your deck…'}
+                {mode === 'reformat' ? 'Reformatting your deck…' : mode === 'from-url' ? 'Fetching and building…' : 'Crafting your deck…'}
               </>
             ) : (
               <>
-                {mode === 'reformat' ? 'Reformat deck' : 'Generate deck'}
-                {mode === 'generate' && <span style={{ opacity: 0.6, fontSize: 11 }}>⌘↵</span>}
+                {mode === 'reformat' ? 'Reformat deck' : mode === 'from-url' ? 'Build from URL' : 'Generate deck'}
+                {mode !== 'reformat' && <span style={{ opacity: 0.6, fontSize: 11 }}>⌘↵</span>}
               </>
             )}
           </button>
