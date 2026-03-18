@@ -115,7 +115,8 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
       return;
     }
 
-    if (!topic.trim()) return;
+    const hasContext = (contextTab === 'paste' && contextText.trim()) || (contextTab === 'url' && contextUrl.trim());
+    if (!topic.trim() && !hasContext) return;
     setLoading(true);
     setError('');
     try {
@@ -123,7 +124,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic,
+          topic: topic.trim() || 'the provided content',
           audience,
           tone,
           context: contextTab === 'paste' && contextText.trim() ? contextText : undefined,
@@ -146,10 +147,11 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
     }
   };
 
+  const hasContext = (contextTab === 'paste' && contextText.trim()) || (contextTab === 'url' && contextUrl.trim());
   const canSubmit =
     mode === 'reformat' ? !!pdfData :
     mode === 'from-url' ? !!sourceUrl.trim() :
-    !!topic.trim();
+    !!topic.trim() || !!hasContext;
 
   return (
     <div
@@ -274,7 +276,7 @@ export default function OnboardingScreen({ onGenerate, onSkip }: Props) {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g. How AirOps helps B2B SaaS companies scale content without headcount"
+            placeholder={hasContext ? "Topic (optional — we'll derive it from your content)" : "e.g. How AirOps helps B2B SaaS companies scale content without headcount"}
             rows={3}
             style={{
               width: '100%',
