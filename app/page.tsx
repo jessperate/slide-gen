@@ -14,6 +14,7 @@ import { renderSlide, LogoLayer } from '@/components/SlideCanvas';
 import { LogoOverlay } from '@/lib/slides';
 import RemixBar from '@/components/RemixBar';
 import RecentDecksModal from '@/components/RecentDecksModal';
+import FloatingFontSizer from '@/components/FloatingFontSizer';
 import { getOrCreateDeckId, setCurrentDeckId, upsertHistory, deckName, DeckEntry } from '@/lib/deckHistory';
 
 const STORAGE_KEY = 'slidegen-current-deck';
@@ -23,6 +24,7 @@ const THEME_KEY = 'slidegen-theme';
 const SLIDE_COLORS_KEY = 'slidegen-slide-colors';
 const VIEWER_NAME_KEY = 'slidegen-viewer-name';
 const IMG_KEY_PREFIX = 'slidegen-img-';
+const OVERLAY_KEY_PREFIX = 'slidegen-overlay-';
 
 /** Save base64 images to individual per-slide keys so they don't bloat the main autosave. */
 function saveImageAssets(slides: SlideData[]) {
@@ -31,6 +33,14 @@ function saveImageAssets(slides: SlideData[]) {
     if (typeof rec.imageUrl === 'string' && (rec.imageUrl as string).startsWith('data:')) {
       try { localStorage.setItem(`${IMG_KEY_PREFIX}${s.id}`, rec.imageUrl as string); } catch {}
     }
+    const overlays = rec.imageOverlays as Array<{ id: string; url: string }> | undefined;
+    if (Array.isArray(overlays)) {
+      for (const o of overlays) {
+        if (typeof o.url === 'string' && o.url.startsWith('data:')) {
+          try { localStorage.setItem(`${OVERLAY_KEY_PREFIX}${s.id}-${o.id}`, o.url); } catch {}
+        }
+      }
+    }
   }
 }
 
@@ -38,11 +48,21 @@ function saveImageAssets(slides: SlideData[]) {
 function restoreImageAssets(slides: SlideData[]): SlideData[] {
   return slides.map((s) => {
     const rec = s as unknown as Record<string, unknown>;
+    let result = s;
     if (!rec.imageUrl) {
       const img = localStorage.getItem(`${IMG_KEY_PREFIX}${s.id}`);
-      if (img) return { ...s, imageUrl: img } as SlideData;
+      if (img) result = { ...result, imageUrl: img } as SlideData;
     }
-    return s;
+    const overlays = (rec.imageOverlays as Array<{ id: string; url: string }> | undefined) ?? [];
+    const restoredOverlays = overlays.map((o) => {
+      if (!o.url) {
+        const saved = localStorage.getItem(`${OVERLAY_KEY_PREFIX}${s.id}-${o.id}`);
+        if (saved) return { ...o, url: saved };
+      }
+      return o;
+    });
+    if (restoredOverlays.length > 0) result = { ...result, imageOverlays: restoredOverlays } as unknown as SlideData;
+    return result;
   });
 }
 
@@ -50,10 +70,18 @@ function restoreImageAssets(slides: SlideData[]): SlideData[] {
 function stripImageUrls(slides: SlideData[]): SlideData[] {
   return slides.map((s) => {
     const rec = s as unknown as Record<string, unknown>;
+    let result = s;
     if (typeof rec.imageUrl === 'string' && (rec.imageUrl as string).startsWith('data:')) {
-      return { ...s, imageUrl: undefined } as SlideData;
+      result = { ...result, imageUrl: undefined } as SlideData;
     }
-    return s;
+    const overlays = rec.imageOverlays as Array<{ id: string; url: string }> | undefined;
+    if (Array.isArray(overlays) && overlays.some((o) => o.url?.startsWith('data:'))) {
+      result = {
+        ...result,
+        imageOverlays: overlays.map((o) => o.url?.startsWith('data:') ? { ...o, url: '' } : o),
+      } as unknown as SlideData;
+    }
+    return result;
   });
 }
 
@@ -232,6 +260,7 @@ export default function SlideGenPage() {
   const [preRemixSlides, setPreRemixSlides] = useState<Record<string, SlideData>>({});
   const [chatMode, setChatMode] = useState(false);
   const [showRecents, setShowRecents] = useState(false);
+  const [focusedField, setFocusedField] = useState<{ key: string; rect: DOMRect } | null>(null);
   const deckIdRef = useRef<string>('');
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -1139,6 +1168,23 @@ export default function SlideGenPage() {
         {/* Floating link toolbar — shown when text is selected in a slide contentEditable */}
         {!commentMode && !presenting && <LinkToolbar />}
 
+        {/* Per-field font sizer */}
+        {focusedField && activeSlide && !commentMode && (
+          <FloatingFontSizer
+            fieldKey={focusedField.key}
+            currentScale={(activeSlide as { fontScales?: Record<string, number> }).fontScales?.[focusedField.key] ?? 1}
+            anchorRect={focusedField.rect}
+            onScale={(scale) => {
+              const current = (activeSlide as { fontScales?: Record<string, number> }).fontScales ?? {};
+              const updated = Math.abs(scale - 1) < 0.01
+                ? Object.fromEntries(Object.entries(current).filter(([k]) => k !== focusedField.key))
+                : { ...current, [focusedField.key]: scale };
+              updateActiveSlide({ fontScales: updated } as Partial<SlideData>);
+            }}
+            onClose={() => setFocusedField(null)}
+          />
+        )}
+
         {/* Main canvas */}
         <div
           ref={canvasContainerRef}
@@ -1151,7 +1197,18 @@ export default function SlideGenPage() {
           {activeSlide && (
             <div style={{ width: slideWidth, height: slideHeight, position: 'relative', flexShrink: 0, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
               {/* Slide content */}
-              <div style={{ transformOrigin: 'top left', transform: `scale(${canvasScale})`, width: 1280, height: 720, position: 'absolute', top: 0, left: 0 }}>
+              <div
+                style={{ transformOrigin: 'top left', transform: `scale(${canvasScale})`, width: 1280, height: 720, position: 'absolute', top: 0, left: 0 }}
+                onFocusCapture={(e) => {
+                  const el = e.target as HTMLElement;
+                  const key = el.getAttribute('data-fieldkey');
+                  if (key) setFocusedField({ key, rect: el.getBoundingClientRect() });
+                }}
+                onBlurCapture={(e) => {
+                  const related = e.relatedTarget as HTMLElement | null;
+                  if (!related?.closest?.('[data-font-sizer]')) setFocusedField(null);
+                }}
+              >
                 {renderSlide(activeSlide, !commentMode, updateActiveSlide, activeSlideTheme)}
                 <LogoLayer
                   logos={(activeSlide as { logos?: LogoOverlay[] }).logos ?? []}

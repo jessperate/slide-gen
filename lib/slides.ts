@@ -7,6 +7,15 @@ export interface LogoOverlay {
   grayscale?: boolean;
 }
 
+export interface ImageOverlay {
+  id: string;
+  url: string;
+  x: number;       // 0–100 (% of canvas width), anchor = center
+  y: number;       // 0–100 (% of canvas height), anchor = center
+  width: number;   // px at 1280×720
+  height: number;  // px at 1280×720
+}
+
 export interface CoverSlideData {
   id: string;
   type: 'cover';
@@ -20,6 +29,7 @@ export interface CoverSlideData {
   imageY?: number;
   imageZoom?: number;
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface SectionSlideData {
@@ -31,6 +41,7 @@ export interface SectionSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface DiagramColumn {
@@ -47,6 +58,7 @@ export interface DiagramSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface Metric {
@@ -64,6 +76,7 @@ export interface StatsSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface ContentColumn {
@@ -79,6 +92,7 @@ export interface ContentSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface BackCoverSlideData {
@@ -89,6 +103,7 @@ export interface BackCoverSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface HeroSlideData {
@@ -99,6 +114,7 @@ export interface HeroSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface AgendaSlideData {
@@ -109,6 +125,7 @@ export interface AgendaSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface QuoteSlideData {
@@ -123,6 +140,7 @@ export interface QuoteSlideData {
   imageY?: number;
   imageZoom?: number;
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface ThreeColItem {
@@ -139,6 +157,7 @@ export interface ThreeColSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface FeatureListItem {
@@ -155,6 +174,7 @@ export interface FeatureListSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface CustomerMetric {
@@ -173,6 +193,7 @@ export interface CustomerStorySlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface ChecklistItem {
@@ -189,6 +210,7 @@ export interface ChecklistSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 // ── New slide types ──────────────────────────────────────────────────────────
@@ -206,6 +228,7 @@ export interface BigQuoteSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface TwoColMediaSlideData {
@@ -221,6 +244,7 @@ export interface TwoColMediaSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface ContactCard {
@@ -239,6 +263,7 @@ export interface ContactSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface TeamMember {
@@ -255,6 +280,7 @@ export interface TeamSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface FullImageSlideData {
@@ -268,6 +294,7 @@ export interface FullImageSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface CaseStudyStat { value: string; description: string; }
@@ -285,6 +312,7 @@ export interface CaseStudySlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface SpeakerSlideData {
@@ -301,12 +329,14 @@ export interface SpeakerSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface ChartSlideData {
   id: string;
   type: 'chart';
   headline: string;
+  subheadline?: string;
   description?: string;
   chartwizState: {
     chartType: 'bar' | 'line' | 'ranked' | 'stat' | 'table' | 'pie';
@@ -326,6 +356,7 @@ export interface ChartSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export interface TableSlideData {
@@ -337,6 +368,7 @@ export interface TableSlideData {
   hideLogo?: boolean;
   logos?: LogoOverlay[];
   textScale?: number;
+  fontScales?: Record<string, number>;
 }
 
 export type SlideData =

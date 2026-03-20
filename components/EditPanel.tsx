@@ -5,6 +5,7 @@ import AirOpsLogo from '@/components/AirOpsLogo';
 import {
   SlideData,
   LogoOverlay,
+  ImageOverlay,
   DiagramSlideData,
   StatsSlideData,
   ContentSlideData,
@@ -850,6 +851,114 @@ function RemixIconPicker({ value, onChange }: { value: string; onChange: (icon: 
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ImageOverlaySection({
+  overlays,
+  onUpdate,
+}: {
+  overlays: ImageOverlay[];
+  onUpdate: (overlays: ImageOverlay[]) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [urlInput, setUrlInput] = useState('');
+
+  const addOverlay = (url: string) => {
+    const newOverlay: ImageOverlay = {
+      id: Math.random().toString(36).slice(2),
+      url,
+      x: 50,
+      y: 50,
+      width: 320,
+      height: 200,
+    };
+    onUpdate([...overlays, newOverlay]);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => addOverlay(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleUrlAdd = () => {
+    if (!urlInput.trim()) return;
+    addOverlay(urlInput.trim());
+    setUrlInput('');
+  };
+
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+      <label style={labelStyle}>Image Overlays</label>
+
+      {overlays.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+          {overlays.map((o) => (
+            <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1a1a1a', padding: '4px 8px', border: '1px solid #2a2a2a' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={o.url} alt="" style={{ width: 36, height: 24, objectFit: 'cover', flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {o.url.startsWith('data:') ? 'Uploaded image' : o.url}
+              </span>
+              <button
+                onClick={() => onUpdate(overlays.filter((x) => x.id !== o.id))}
+                style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 4px', flexShrink: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        style={{ display: 'none' }}
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        style={{
+          width: '100%',
+          background: '#1a1a1a',
+          border: '1px dashed #3a3a3a',
+          color: 'rgba(255,255,255,0.5)',
+          fontFamily: '"Saans", sans-serif',
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: '8px',
+          textAlign: 'center',
+          marginBottom: 6,
+          transition: 'border-color 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#008c44'; e.currentTarget.style.color = '#008c44'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+      >
+        ↑ Upload image
+      </button>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleUrlAdd(); }}
+          placeholder="https://..."
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          onClick={handleUrlAdd}
+          style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 10px', flexShrink: 0 }}
+        >
+          Add
+        </button>
+      </div>
     </div>
   );
 }
@@ -1973,6 +2082,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
             <GiphySearch onSelect={(url) => handleAddImage(url)} />
           </>
         )}
+
+        {/* Image overlays — freely positioned & resizable on any slide */}
+        <ImageOverlaySection
+          overlays={(slide as { imageOverlays?: ImageOverlay[] }).imageOverlays ?? []}
+          onUpdate={(overlays) => update({ imageOverlays: overlays } as Partial<SlideData>)}
+        />
 
         {/* Text size */}
         <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
