@@ -437,37 +437,51 @@ export function ImageOverlayLayer({
 
   if (localOverlays.length === 0) return null;
 
+  const PAD = 16; // padding around image so corner handles stay inside the hover zone
+
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 25, pointerEvents: 'none' }}>
       {localOverlays.map((overlay) => {
         const showHandles = interactive && hoveredId === overlay.id;
         return (
+          // Outer hover zone: larger than the image by PAD on each side so handles stay inside it
           <div
             key={overlay.id}
             onMouseEnter={() => interactive && setHoveredId(overlay.id)}
             onMouseLeave={() => { if (!activeDragId.current) setHoveredId(null); }}
-            onMouseDown={(e) => startDrag(e, overlay, 'move')}
             style={{
               position: 'absolute',
               left: (overlay.x / 100) * 1280,
               top: (overlay.y / 100) * 720,
-              width: overlay.width,
-              height: overlay.height,
+              width: overlay.width + PAD * 2,
+              height: overlay.height + PAD * 2,
               transform: 'translate(-50%, -50%)',
-              cursor: interactive ? 'grab' : 'default',
-              userSelect: 'none',
-              outline: showHandles ? '2px solid #00ff64' : 'none',
-              outlineOffset: 1,
               pointerEvents: interactive ? 'auto' : 'none',
+              userSelect: 'none',
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={overlay.url}
-              alt=""
-              draggable={false}
-              style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none' }}
-            />
+            {/* Inner image div, inset by PAD */}
+            <div
+              onMouseDown={(e) => startDrag(e, overlay, 'move')}
+              style={{
+                position: 'absolute',
+                left: PAD,
+                top: PAD,
+                width: overlay.width,
+                height: overlay.height,
+                cursor: interactive ? 'grab' : 'default',
+                outline: showHandles ? '2px solid #00ff64' : 'none',
+                outlineOffset: 1,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={overlay.url}
+                alt=""
+                draggable={false}
+                style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none' }}
+              />
+            </div>
             {showHandles && (
               <>
                 {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
@@ -481,11 +495,11 @@ export function ImageOverlayLayer({
                       background: '#00ff64',
                       border: '1.5px solid #002910',
                       boxSizing: 'border-box',
-                      zIndex: 1,
-                      ...(corner === 'tl' ? { top: -6, left: -6, cursor: 'nw-resize' } :
-                          corner === 'tr' ? { top: -6, right: -6, cursor: 'ne-resize' } :
-                          corner === 'bl' ? { bottom: -6, left: -6, cursor: 'sw-resize' } :
-                                           { bottom: -6, right: -6, cursor: 'se-resize' }),
+                      // Positioned at image corners (PAD offset from outer div edges)
+                      ...(corner === 'tl' ? { top: PAD - 6, left: PAD - 6, cursor: 'nw-resize' } :
+                          corner === 'tr' ? { top: PAD - 6, left: PAD + overlay.width - 6, cursor: 'ne-resize' } :
+                          corner === 'bl' ? { top: PAD + overlay.height - 6, left: PAD - 6, cursor: 'sw-resize' } :
+                                           { top: PAD + overlay.height - 6, left: PAD + overlay.width - 6, cursor: 'se-resize' }),
                     }}
                   />
                 ))}
@@ -493,8 +507,8 @@ export function ImageOverlayLayer({
                   onMouseDown={(e) => handleDelete(e, overlay.id)}
                   style={{
                     position: 'absolute',
-                    top: -14,
-                    right: -14,
+                    top: PAD - 10,
+                    left: PAD + overlay.width - 10,
                     width: 20,
                     height: 20,
                     background: '#cc3333',
@@ -506,7 +520,6 @@ export function ImageOverlayLayer({
                     fontSize: 10,
                     cursor: 'pointer',
                     lineHeight: 1,
-                    zIndex: 1,
                   }}
                 >
                   ✕
