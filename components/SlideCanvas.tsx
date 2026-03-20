@@ -356,99 +356,66 @@ export function ImageOverlayLayer({
 }) {
   const [localOverlays, setLocalOverlays] = useState(overlays);
   const localOverlaysRef = useRef(overlays);
-  const isDragging = useRef(false);
   const onUpdateRef = useRef(onUpdate);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // hoveredId tracks which overlay the mouse is over; kept during active drag
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const activeDragId = useRef<string | null>(null);
 
   useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
 
   useEffect(() => {
-    if (!isDragging.current) {
+    if (!activeDragId.current) {
       localOverlaysRef.current = overlays;
       setLocalOverlays(overlays);
     }
   }, [overlays]);
 
-  useEffect(() => {
-    if (!interactive) return;
-    const handleClick = () => setSelectedId(null);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, [interactive]);
-
-  const handleDragMouseDown = (e: React.MouseEvent, overlay: ImageOverlay) => {
-    if (!interactive || !onUpdateRef.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedId(overlay.id);
-    isDragging.current = true;
-    const startClientX = e.clientX;
-    const startClientY = e.clientY;
-    const startX = overlay.x;
-    const startY = overlay.y;
-    const id = overlay.id;
-    const capturedScale = scale;
-
-    const handleMouseMove = (me: MouseEvent) => {
-      const dx = (me.clientX - startClientX) / capturedScale;
-      const dy = (me.clientY - startClientY) / capturedScale;
-      const newX = Math.max(0, Math.min(100, startX + (dx / 1280) * 100));
-      const newY = Math.max(0, Math.min(100, startY + (dy / 720) * 100));
-      const updated = localOverlaysRef.current.map((o) =>
-        o.id === id ? { ...o, x: newX, y: newY } : o
-      );
-      localOverlaysRef.current = updated;
-      setLocalOverlays([...updated]);
-    };
-
-    const handleMouseUp = () => {
-      isDragging.current = false;
-      onUpdateRef.current?.(localOverlaysRef.current);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleResizeMouseDown = (
+  const startDrag = (
     e: React.MouseEvent,
     overlay: ImageOverlay,
-    corner: 'tl' | 'tr' | 'bl' | 'br'
+    mode: 'move' | 'tl' | 'tr' | 'bl' | 'br'
   ) => {
     if (!interactive || !onUpdateRef.current) return;
     e.preventDefault();
     e.stopPropagation();
-    isDragging.current = true;
+    activeDragId.current = overlay.id;
+
     const startClientX = e.clientX;
     const startClientY = e.clientY;
-    const startW = overlay.width;
-    const startH = overlay.height;
     const startX = overlay.x;
     const startY = overlay.y;
+    const startW = overlay.width;
+    const startH = overlay.height;
     const id = overlay.id;
     const capturedScale = scale;
-    const dxSign = corner === 'tr' || corner === 'br' ? 1 : -1;
-    const dySign = corner === 'bl' || corner === 'br' ? 1 : -1;
+    const dxSign = mode === 'tr' || mode === 'br' ? 1 : mode === 'tl' || mode === 'bl' ? -1 : 0;
+    const dySign = mode === 'bl' || mode === 'br' ? 1 : mode === 'tl' || mode === 'tr' ? -1 : 0;
 
     const handleMouseMove = (me: MouseEvent) => {
       const dx = (me.clientX - startClientX) / capturedScale;
       const dy = (me.clientY - startClientY) / capturedScale;
-      const newW = Math.max(40, startW + dxSign * dx);
-      const newH = Math.max(40, startH + dySign * dy);
-      // Move center by half the size delta so the opposite corner stays fixed
-      const newX = startX + (dxSign * (newW - startW)) / 2 / 1280 * 100;
-      const newY = startY + (dySign * (newH - startH)) / 2 / 720 * 100;
+
+      let newX = startX, newY = startY, newW = startW, newH = startH;
+
+      if (mode === 'move') {
+        newX = Math.max(0, Math.min(100, startX + (dx / 1280) * 100));
+        newY = Math.max(0, Math.min(100, startY + (dy / 720) * 100));
+      } else {
+        newW = Math.max(40, startW + dxSign * dx);
+        newH = Math.max(40, startH + dySign * dy);
+        newX = startX + (dxSign * (newW - startW)) / 2 / 1280 * 100;
+        newY = startY + (dySign * (newH - startH)) / 2 / 720 * 100;
+      }
+
       const updated = localOverlaysRef.current.map((o) =>
-        o.id === id ? { ...o, width: newW, height: newH, x: newX, y: newY } : o
+        o.id === id ? { ...o, x: newX, y: newY, width: newW, height: newH } : o
       );
       localOverlaysRef.current = updated;
       setLocalOverlays([...updated]);
     };
 
     const handleMouseUp = () => {
-      isDragging.current = false;
+      activeDragId.current = null;
       onUpdateRef.current?.(localOverlaysRef.current);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -465,7 +432,7 @@ export function ImageOverlayLayer({
     localOverlaysRef.current = updated;
     setLocalOverlays([...updated]);
     onUpdateRef.current?.(updated);
-    setSelectedId(null);
+    setHoveredId(null);
   };
 
   if (localOverlays.length === 0) return null;
@@ -473,12 +440,13 @@ export function ImageOverlayLayer({
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 25, pointerEvents: 'none' }}>
       {localOverlays.map((overlay) => {
-        const isSelected = interactive && selectedId === overlay.id;
+        const showHandles = interactive && hoveredId === overlay.id;
         return (
           <div
             key={overlay.id}
-            onClick={(e) => { e.stopPropagation(); if (interactive) setSelectedId(overlay.id); }}
-            onMouseDown={(e) => handleDragMouseDown(e, overlay)}
+            onMouseEnter={() => interactive && setHoveredId(overlay.id)}
+            onMouseLeave={() => { if (!activeDragId.current) setHoveredId(null); }}
+            onMouseDown={(e) => startDrag(e, overlay, 'move')}
             style={{
               position: 'absolute',
               left: (overlay.x / 100) * 1280,
@@ -488,7 +456,7 @@ export function ImageOverlayLayer({
               transform: 'translate(-50%, -50%)',
               cursor: interactive ? 'grab' : 'default',
               userSelect: 'none',
-              outline: isSelected ? '2px solid #00ff64' : 'none',
+              outline: showHandles ? '2px solid #00ff64' : 'none',
               outlineOffset: 1,
               pointerEvents: interactive ? 'auto' : 'none',
             }}
@@ -500,23 +468,24 @@ export function ImageOverlayLayer({
               draggable={false}
               style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none' }}
             />
-            {isSelected && (
+            {showHandles && (
               <>
                 {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
                   <div
                     key={corner}
-                    onMouseDown={(e) => handleResizeMouseDown(e, overlay, corner)}
+                    onMouseDown={(e) => startDrag(e, overlay, corner)}
                     style={{
                       position: 'absolute',
-                      width: 10,
-                      height: 10,
+                      width: 12,
+                      height: 12,
                       background: '#00ff64',
                       border: '1.5px solid #002910',
                       boxSizing: 'border-box',
-                      ...(corner === 'tl' ? { top: -5, left: -5, cursor: 'nw-resize' } :
-                          corner === 'tr' ? { top: -5, right: -5, cursor: 'ne-resize' } :
-                          corner === 'bl' ? { bottom: -5, left: -5, cursor: 'sw-resize' } :
-                                           { bottom: -5, right: -5, cursor: 'se-resize' }),
+                      zIndex: 1,
+                      ...(corner === 'tl' ? { top: -6, left: -6, cursor: 'nw-resize' } :
+                          corner === 'tr' ? { top: -6, right: -6, cursor: 'ne-resize' } :
+                          corner === 'bl' ? { bottom: -6, left: -6, cursor: 'sw-resize' } :
+                                           { bottom: -6, right: -6, cursor: 'se-resize' }),
                     }}
                   />
                 ))}
@@ -526,17 +495,18 @@ export function ImageOverlayLayer({
                     position: 'absolute',
                     top: -14,
                     right: -14,
-                    width: 18,
-                    height: 18,
+                    width: 20,
+                    height: 20,
                     background: '#cc3333',
                     color: 'white',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 9,
+                    fontSize: 10,
                     cursor: 'pointer',
                     lineHeight: 1,
+                    zIndex: 1,
                   }}
                 >
                   ✕
