@@ -14,6 +14,8 @@ interface Props {
 
 export default function ContentSlide({ data, interactive = true, onUpdate, theme = DEFAULT_THEME }: Props) {
   const s = data.textScale ?? 1;
+  const fontScales = (data as { fontScales?: Record<string, number> }).fontScales;
+  const fk = (key: string, base: number) => Math.round(base * s * (fontScales?.[key] ?? 1));
   return (
     <div
       style={{
@@ -38,14 +40,14 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
 
       {/* Headline */}
       <div
-        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }))}
+        {...richTextProps(data.headline ?? '', !!onUpdate, (html) => onUpdate?.({ ...data, headline: html }), 'headline')}
         style={{
           position: 'absolute',
           top: 64,
           left: 64,
           right: 64,
           fontFamily: '"Serrif VF", serif',
-          fontSize: Math.round(44 * s),
+          fontSize: fk('headline', 44),
           fontWeight: 400,
           color: theme.textOnLight,
           letterSpacing: '-0.02em',
@@ -106,10 +108,10 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
                 const next = [...data.columns];
                 next[i] = { ...next[i], heading: html };
                 onUpdate?.({ ...data, columns: next });
-              })}
+              }, `col-${i}-header`)}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: Math.round(18 * s),
+                fontSize: fk(`col-${i}-header`, 18),
                 fontWeight: 600,
                 color: theme.textOnLight,
                 marginBottom: 16,
@@ -123,10 +125,10 @@ export default function ContentSlide({ data, interactive = true, onUpdate, theme
                 const next = [...data.columns];
                 next[i] = { ...next[i], body: html };
                 onUpdate?.({ ...data, columns: next });
-              })}
+              }, `col-${i}-body`)}
               style={{
                 fontFamily: '"Saans", sans-serif',
-                fontSize: Math.round(15 * s),
+                fontSize: fk(`col-${i}-body`, 15),
                 fontWeight: 400,
                 color: theme.bodyOnLight,
                 lineHeight: 1.65,

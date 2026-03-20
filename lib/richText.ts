@@ -5,18 +5,21 @@ import React from 'react';
  * - Uses innerHTML (not textContent) to preserve <a> tags
  * - Uses a callback ref to safely set innerHTML without fighting React's reconciler
  * - Saves innerHTML on blur
+ * - Optionally marks the element with a data-fieldkey for font-size targeting
  */
 export function richTextProps(
   value: string,
   editable: boolean,
   onSave: (html: string) => void,
-): React.HTMLAttributes<HTMLDivElement> & { ref: (el: HTMLElement | null) => void } {
+  fieldKey?: string,
+): React.HTMLAttributes<HTMLDivElement> & { ref: (el: HTMLElement | null) => void; 'data-fieldkey'?: string } {
   // Convert plain \n to <br> so legacy data with newlines renders correctly
   const toHtml = (s: string) => (s ?? '').includes('<') ? s : s.replace(/\n/g, '<br>');
 
   return {
     contentEditable: editable || undefined,
     suppressContentEditableWarning: editable || undefined,
+    ...(fieldKey ? { 'data-fieldkey': fieldKey } : {}),
     ref: (el: HTMLElement | null) => {
       if (el && el !== document.activeElement) el.innerHTML = toHtml(value);
     },

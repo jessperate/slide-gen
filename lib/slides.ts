@@ -16,6 +16,15 @@ export interface ImageOverlay {
   height: number;  // px at 1280×720
 }
 
+export interface FrameOverlay {
+  id: string;
+  url: string;
+  x: number;       // 0–100 (% of canvas width), anchor = center
+  y: number;       // 0–100 (% of canvas height), anchor = center
+  width: number;   // px at 1280×720
+  height: number;  // px at 1280×720
+}
+
 export interface CoverSlideData {
   id: string;
   type: 'cover';

@@ -10,7 +10,7 @@ import AIChatPanel from '@/components/AIChatPanel';
 import AddSlideModal from '@/components/AddSlideModal';
 import OnboardingScreen from '@/components/OnboardingScreen';
 import AirOpsLogo from '@/components/AirOpsLogo';
-import { renderSlide, LogoLayer, ImageOverlayLayer } from '@/components/SlideCanvas';
+import { renderSlide, LogoLayer, ImageOverlayLayer, FrameOverlayLayer } from '@/components/SlideCanvas';
 import { LogoOverlay } from '@/lib/slides';
 import RemixBar from '@/components/RemixBar';
 import RecentDecksModal from '@/components/RecentDecksModal';
@@ -1221,6 +1221,12 @@ export default function SlideGenPage() {
                   scale={canvasScale}
                   interactive={!commentMode}
                   onUpdate={(imageOverlays) => updateActiveSlide({ imageOverlays } as Partial<SlideData>)}
+                />
+                <FrameOverlayLayer
+                  overlays={(activeSlide as { frameOverlays?: import('@/lib/slides').FrameOverlay[] }).frameOverlays ?? []}
+                  scale={canvasScale}
+                  interactive={!commentMode}
+                  onUpdate={(frameOverlays) => updateActiveSlide({ frameOverlays } as Partial<SlideData>)}
                 />
               </div>
 

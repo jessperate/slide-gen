@@ -6,6 +6,7 @@ import {
   SlideData,
   LogoOverlay,
   ImageOverlay,
+  FrameOverlay,
   DiagramSlideData,
   StatsSlideData,
   ContentSlideData,
@@ -957,6 +958,81 @@ function ImageOverlaySection({
           style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 10px', flexShrink: 0 }}
         >
           Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FrameOverlaySection({
+  overlays,
+  onUpdate,
+}: {
+  overlays: FrameOverlay[];
+  onUpdate: (overlays: FrameOverlay[]) => void;
+}) {
+  const [urlInput, setUrlInput] = useState('');
+
+  const addOverlay = (rawUrl: string) => {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return;
+    // Prepend https:// if no protocol given
+    const url = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const newOverlay: FrameOverlay = {
+      id: Math.random().toString(36).slice(2),
+      url,
+      x: 50,
+      y: 50,
+      width: 640,
+      height: 400,
+    };
+    onUpdate([...overlays, newOverlay]);
+    setUrlInput('');
+  };
+
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
+      <label style={labelStyle}>Embed URL</label>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans", sans-serif', marginBottom: 8, lineHeight: 1.5 }}>
+        Paste any URL to embed it as an interactive frame on the slide.
+      </div>
+
+      {overlays.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+          {overlays.map((o) => {
+            let hostname = o.url;
+            try { hostname = new URL(o.url).hostname; } catch {}
+            return (
+              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1a1a1a', padding: '6px 8px', border: '1px solid #2a2a2a' }}>
+                <span style={{ flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {hostname}
+                </span>
+                <button
+                  onClick={() => onUpdate(overlays.filter((x) => x.id !== o.id))}
+                  style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 4px', flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') addOverlay(urlInput); }}
+          placeholder="https://..."
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          onClick={() => addOverlay(urlInput)}
+          style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 10px', flexShrink: 0 }}
+        >
+          Embed
         </button>
       </div>
     </div>
@@ -2087,6 +2163,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
         <ImageOverlaySection
           overlays={(slide as { imageOverlays?: ImageOverlay[] }).imageOverlays ?? []}
           onUpdate={(overlays) => update({ imageOverlays: overlays } as Partial<SlideData>)}
+        />
+
+        {/* Iframe embeds — interactive web frames on any slide */}
+        <FrameOverlaySection
+          overlays={(slide as { frameOverlays?: FrameOverlay[] }).frameOverlays ?? []}
+          onUpdate={(overlays) => update({ frameOverlays: overlays } as Partial<SlideData>)}
         />
 
         {/* Text size */}

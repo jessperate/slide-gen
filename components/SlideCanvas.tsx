@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { SlideData, LogoOverlay, ImageOverlay } from '@/lib/slides';
+import { SlideData, LogoOverlay, ImageOverlay, FrameOverlay } from '@/lib/slides';
 import { SlideTheme, DEFAULT_THEME } from '@/lib/themes';
 import CoverSlide from './slides/CoverSlide';
 import SectionSlide from './slides/SectionSlide';
@@ -550,6 +550,215 @@ export function ImageOverlayLayer({
   );
 }
 
+const FRAME_TITLE_H = 28; // px height of the drag-handle title bar
+
+export function FrameOverlayLayer({
+  overlays,
+  scale,
+  interactive,
+  onUpdate,
+}: {
+  overlays: FrameOverlay[];
+  scale: number;
+  interactive: boolean;
+  onUpdate?: (overlays: FrameOverlay[]) => void;
+}) {
+  const [localOverlays, setLocalOverlays] = useState(overlays);
+  const localOverlaysRef = useRef(overlays);
+  const onUpdateRef = useRef(onUpdate);
+  const [isDraggingActive, setIsDraggingActive] = useState(false);
+
+  useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
+
+  useEffect(() => {
+    if (!isDraggingActive) {
+      localOverlaysRef.current = overlays;
+      setLocalOverlays(overlays);
+    }
+  }, [overlays, isDraggingActive]);
+
+  const handleDragMouseDown = (e: React.MouseEvent, overlay: FrameOverlay) => {
+    if (!interactive || !onUpdateRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingActive(true);
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startX = overlay.x;
+    const startY = overlay.y;
+    const id = overlay.id;
+    const capturedScale = scale;
+
+    const handleMouseMove = (me: MouseEvent) => {
+      const dx = (me.clientX - startClientX) / capturedScale;
+      const dy = (me.clientY - startClientY) / capturedScale;
+      const newX = Math.max(0, Math.min(100, startX + (dx / 1280) * 100));
+      const newY = Math.max(0, Math.min(100, startY + (dy / 720) * 100));
+      const updated = localOverlaysRef.current.map((o) =>
+        o.id === id ? { ...o, x: newX, y: newY } : o
+      );
+      localOverlaysRef.current = updated;
+      setLocalOverlays([...updated]);
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingActive(false);
+      onUpdateRef.current?.(localOverlaysRef.current);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResizeMouseDown = (
+    e: React.MouseEvent,
+    overlay: FrameOverlay,
+    corner: 'tl' | 'tr' | 'bl' | 'br'
+  ) => {
+    if (!interactive || !onUpdateRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingActive(true);
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startW = overlay.width;
+    const startH = overlay.height;
+    const startX = overlay.x;
+    const startY = overlay.y;
+    const id = overlay.id;
+    const capturedScale = scale;
+    const dxSign = corner === 'tr' || corner === 'br' ? 1 : -1;
+    const dySign = corner === 'bl' || corner === 'br' ? 1 : -1;
+
+    const handleMouseMove = (me: MouseEvent) => {
+      const dx = (me.clientX - startClientX) / capturedScale;
+      const dy = (me.clientY - startClientY) / capturedScale;
+      const newW = Math.max(120, startW + dxSign * dx);
+      const newH = Math.max(80, startH + dySign * dy);
+      const newX = startX + (dxSign * (newW - startW)) / 2 / 1280 * 100;
+      const newY = startY + (dySign * (newH - startH)) / 2 / 720 * 100;
+      const updated = localOverlaysRef.current.map((o) =>
+        o.id === id ? { ...o, width: newW, height: newH, x: newX, y: newY } : o
+      );
+      localOverlaysRef.current = updated;
+      setLocalOverlays([...updated]);
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingActive(false);
+      onUpdateRef.current?.(localOverlaysRef.current);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const updated = localOverlaysRef.current.filter((o) => o.id !== id);
+    localOverlaysRef.current = updated;
+    setLocalOverlays([...updated]);
+    onUpdateRef.current?.(updated);
+  };
+
+  if (localOverlays.length === 0) return null;
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 30, pointerEvents: 'none' }}>
+      {/* Full-slide drag blocker shown during active drag/resize so mouse moves over iframes are captured */}
+      {isDraggingActive && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 100 }} />
+      )}
+      {localOverlays.map((overlay) => {
+        let hostname = overlay.url;
+        try { hostname = new URL(overlay.url).hostname; } catch {}
+        return (
+          <div
+            key={overlay.id}
+            style={{
+              position: 'absolute',
+              left: (overlay.x / 100) * 1280,
+              top: (overlay.y / 100) * 720,
+              width: overlay.width,
+              height: overlay.height,
+              transform: 'translate(-50%, -50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              pointerEvents: interactive ? 'auto' : 'none',
+              border: '1px solid #2a2a2a',
+              background: '#fff',
+              userSelect: 'none',
+            }}
+          >
+            {/* Title bar — drag handle */}
+            <div
+              onMouseDown={(e) => handleDragMouseDown(e, overlay)}
+              style={{
+                height: FRAME_TITLE_H,
+                background: '#1a1a1a',
+                borderBottom: '1px solid #2a2a2a',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '0 8px',
+                cursor: interactive ? 'grab' : 'default',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                {hostname}
+              </span>
+              {interactive && (
+                <button
+                  onMouseDown={(e) => handleDelete(e, overlay.id)}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 11, padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* iframe */}
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              <iframe
+                src={overlay.url}
+                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />
+            </div>
+
+            {/* Corner resize handles */}
+            {interactive && (['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
+              <div
+                key={corner}
+                onMouseDown={(e) => handleResizeMouseDown(e, overlay, corner)}
+                style={{
+                  position: 'absolute',
+                  width: 10,
+                  height: 10,
+                  background: '#00ff64',
+                  border: '1.5px solid #002910',
+                  boxSizing: 'border-box',
+                  zIndex: 10,
+                  ...(corner === 'tl' ? { top: -5, left: -5, cursor: 'nw-resize' } :
+                      corner === 'tr' ? { top: -5, right: -5, cursor: 'ne-resize' } :
+                      corner === 'bl' ? { bottom: -5, left: -5, cursor: 'sw-resize' } :
+                                       { bottom: -5, right: -5, cursor: 'se-resize' }),
+                }}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SlideCanvas({ slide, interactive = true, className, style, onUpdate, theme = DEFAULT_THEME }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -575,6 +784,7 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
 
   const logos = (slide as { logos?: LogoOverlay[] }).logos ?? [];
   const imageOverlays = (slide as { imageOverlays?: ImageOverlay[] }).imageOverlays ?? [];
+  const frameOverlays = (slide as { frameOverlays?: FrameOverlay[] }).frameOverlays ?? [];
 
   return (
     <div
@@ -619,6 +829,16 @@ export default function SlideCanvas({ slide, interactive = true, className, styl
           onUpdate={
             onUpdate
               ? (updatedOverlays) => onUpdate({ imageOverlays: updatedOverlays } as Partial<SlideData>)
+              : undefined
+          }
+        />
+        <FrameOverlayLayer
+          overlays={frameOverlays}
+          scale={scale}
+          interactive={interactive}
+          onUpdate={
+            onUpdate
+              ? (updatedOverlays) => onUpdate({ frameOverlays: updatedOverlays } as Partial<SlideData>)
               : undefined
           }
         />
