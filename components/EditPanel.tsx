@@ -856,74 +856,100 @@ function RemixIconPicker({ value, onChange }: { value: string; onChange: (icon: 
   );
 }
 
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg|avif|bmp|ico)(\?.*)?$/i;
+
+function isImageUrl(url: string): boolean {
+  try {
+    const path = new URL(url).pathname;
+    return IMAGE_EXTENSIONS.test(path);
+  } catch {
+    return IMAGE_EXTENSIONS.test(url);
+  }
+}
+
 function ImageOverlaySection({
   overlays,
   onUpdate,
+  frameOverlays,
+  onFrameUpdate,
 }: {
   overlays: ImageOverlay[];
   onUpdate: (overlays: ImageOverlay[]) => void;
+  frameOverlays: FrameOverlay[];
+  onFrameUpdate: (overlays: FrameOverlay[]) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [urlInput, setUrlInput] = useState('');
 
-  const addOverlay = (url: string) => {
-    const newOverlay: ImageOverlay = {
-      id: Math.random().toString(36).slice(2),
-      url,
-      x: 50,
-      y: 50,
-      width: 320,
-      height: 200,
-    };
-    onUpdate([...overlays, newOverlay]);
+  const addImageOverlay = (url: string) => {
+    onUpdate([...overlays, { id: Math.random().toString(36).slice(2), url, x: 50, y: 50, width: 320, height: 200 }]);
+  };
+
+  const addFrameOverlay = (rawUrl: string) => {
+    const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    onFrameUpdate([...frameOverlays, { id: Math.random().toString(36).slice(2), url, x: 50, y: 50, width: 640, height: 400 }]);
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => addOverlay(ev.target?.result as string);
+    reader.onload = (ev) => addImageOverlay(ev.target?.result as string);
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
   const handleUrlAdd = () => {
-    if (!urlInput.trim()) return;
-    addOverlay(urlInput.trim());
+    const raw = urlInput.trim();
+    if (!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    if (isImageUrl(url)) {
+      addImageOverlay(url);
+    } else {
+      addFrameOverlay(url);
+    }
     setUrlInput('');
   };
 
+  const allItems: Array<{ type: 'image'; data: ImageOverlay } | { type: 'frame'; data: FrameOverlay }> = [
+    ...overlays.map((o) => ({ type: 'image' as const, data: o })),
+    ...frameOverlays.map((o) => ({ type: 'frame' as const, data: o })),
+  ];
+
   return (
     <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
-      <label style={labelStyle}>Image Overlays</label>
+      <label style={labelStyle}>Add to Slide</label>
 
-      {overlays.length > 0 && (
+      {allItems.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-          {overlays.map((o) => (
-            <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1a1a1a', padding: '4px 8px', border: '1px solid #2a2a2a' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={o.url} alt="" style={{ width: 36, height: 24, objectFit: 'cover', flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {o.url.startsWith('data:') ? 'Uploaded image' : o.url}
-              </span>
-              <button
-                onClick={() => onUpdate(overlays.filter((x) => x.id !== o.id))}
-                style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 4px', flexShrink: 0 }}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+          {allItems.map((item) => {
+            const label = item.type === 'image'
+              ? (item.data.url.startsWith('data:') ? 'Uploaded image' : item.data.url)
+              : (() => { try { return new URL(item.data.url).hostname; } catch { return item.data.url; } })();
+            return (
+              <div key={item.data.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1a1a1a', padding: '4px 8px', border: '1px solid #2a2a2a' }}>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontFamily: '"Saans Mono", monospace', flexShrink: 0, textTransform: 'uppercase' }}>
+                  {item.type === 'image' ? 'img' : 'url'}
+                </span>
+                <span style={{ flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.45)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {label}
+                </span>
+                <button
+                  onClick={() => item.type === 'image'
+                    ? onUpdate(overlays.filter((x) => x.id !== item.data.id))
+                    : onFrameUpdate(frameOverlays.filter((x) => x.id !== item.data.id))
+                  }
+                  style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 4px', flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFile}
-        style={{ display: 'none' }}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
       <button
         onClick={() => fileInputRef.current?.click()}
         style={{
@@ -950,7 +976,7 @@ function ImageOverlaySection({
           value={urlInput}
           onChange={(e) => setUrlInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleUrlAdd(); }}
-          placeholder="https://..."
+          placeholder="Image or page URL…"
           style={{ ...inputStyle, flex: 1 }}
         />
         <button
@@ -960,80 +986,8 @@ function ImageOverlaySection({
           Add
         </button>
       </div>
-    </div>
-  );
-}
-
-function FrameOverlaySection({
-  overlays,
-  onUpdate,
-}: {
-  overlays: FrameOverlay[];
-  onUpdate: (overlays: FrameOverlay[]) => void;
-}) {
-  const [urlInput, setUrlInput] = useState('');
-
-  const addOverlay = (rawUrl: string) => {
-    const trimmed = rawUrl.trim();
-    if (!trimmed) return;
-    // Prepend https:// if no protocol given
-    const url = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-    const newOverlay: FrameOverlay = {
-      id: Math.random().toString(36).slice(2),
-      url,
-      x: 50,
-      y: 50,
-      width: 640,
-      height: 400,
-    };
-    onUpdate([...overlays, newOverlay]);
-    setUrlInput('');
-  };
-
-  return (
-    <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid #2a2a2a' }}>
-      <label style={labelStyle}>Embed URL</label>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: '"Saans", sans-serif', marginBottom: 8, lineHeight: 1.5 }}>
-        Paste any URL to embed it as an interactive frame on the slide.
-      </div>
-
-      {overlays.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-          {overlays.map((o) => {
-            let hostname = o.url;
-            try { hostname = new URL(o.url).hostname; } catch {}
-            return (
-              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1a1a1a', padding: '6px 8px', border: '1px solid #2a2a2a' }}>
-                <span style={{ flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: '"Saans Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {hostname}
-                </span>
-                <button
-                  onClick={() => onUpdate(overlays.filter((x) => x.id !== o.id))}
-                  style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 4px', flexShrink: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 6 }}>
-        <input
-          type="text"
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') addOverlay(urlInput); }}
-          placeholder="https://..."
-          style={{ ...inputStyle, flex: 1 }}
-        />
-        <button
-          onClick={() => addOverlay(urlInput)}
-          style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#F8FFFA', fontFamily: '"Saans", sans-serif', fontSize: 11, cursor: 'pointer', padding: '0 10px', flexShrink: 0 }}
-        >
-          Embed
-        </button>
+      <div style={{ marginTop: 5, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: '"Saans", sans-serif', lineHeight: 1.5 }}>
+        Image URLs (.png, .jpg…) are added as images. All other URLs embed as interactive frames.
       </div>
     </div>
   );
@@ -2159,16 +2113,12 @@ export default function EditPanel({ slide, onChange, colorMode, onColorModeChang
           </>
         )}
 
-        {/* Image overlays — freely positioned & resizable on any slide */}
+        {/* Image overlays + iframe embeds — smart URL detection routes to the right type */}
         <ImageOverlaySection
           overlays={(slide as { imageOverlays?: ImageOverlay[] }).imageOverlays ?? []}
           onUpdate={(overlays) => update({ imageOverlays: overlays } as Partial<SlideData>)}
-        />
-
-        {/* Iframe embeds — interactive web frames on any slide */}
-        <FrameOverlaySection
-          overlays={(slide as { frameOverlays?: FrameOverlay[] }).frameOverlays ?? []}
-          onUpdate={(overlays) => update({ frameOverlays: overlays } as Partial<SlideData>)}
+          frameOverlays={(slide as { frameOverlays?: FrameOverlay[] }).frameOverlays ?? []}
+          onFrameUpdate={(overlays) => update({ frameOverlays: overlays } as Partial<SlideData>)}
         />
 
         {/* Text size */}
