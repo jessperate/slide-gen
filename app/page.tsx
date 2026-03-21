@@ -294,27 +294,47 @@ export default function SlideGenPage() {
     } catch {}
   }, []);
 
-  // Load shared deck from URL hash on mount
+  // Load shared deck from URL on mount — supports short ?s=KEY and legacy #s=LONG
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shortKey = params.get('s');
+    const isPresentMode = params.get('present') === '1';
+
+    const applyState = (state: Record<string, unknown>) => {
+      if (Array.isArray(state.slides) && (state.slides as unknown[]).length > 0) {
+        setSlides(restoreImageAssets(state.slides as SlideData[]));
+        setShowOnboarding(false);
+      }
+      if (state.colorMode && THEMES[state.colorMode as ColorMode]) setColorMode(state.colorMode as ColorMode);
+      if (state.slideColorOverrides) setSlideColorOverrides(state.slideColorOverrides as Record<string, ColorMode>);
+      if (Array.isArray(state.comments)) setComments(state.comments as typeof comments);
+      if (isPresentMode) {
+        setPresentIndex(0);
+        setShowPresentControls(false);
+        setPresenting(true);
+      }
+    };
+
+    if (shortKey) {
+      // Short URL — fetch from server
+      fetch(`/api/share?key=${encodeURIComponent(shortKey)}`)
+        .then((r) => r.json())
+        .then(({ data }) => {
+          if (!data) return;
+          const json = LZString.decompressFromEncodedURIComponent(data);
+          if (json) applyState(JSON.parse(json));
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // Legacy long hash URL
     const hash = window.location.hash;
     if (!hash.startsWith('#s=')) return;
     try {
       const json = LZString.decompressFromEncodedURIComponent(hash.slice(3));
       if (!json) return;
-      const state = JSON.parse(json);
-      if (Array.isArray(state.slides) && state.slides.length > 0) {
-        setSlides(restoreImageAssets(state.slides));
-        setShowOnboarding(false);
-      }
-      if (state.colorMode && THEMES[state.colorMode as ColorMode]) setColorMode(state.colorMode);
-      if (state.slideColorOverrides) setSlideColorOverrides(state.slideColorOverrides);
-      if (Array.isArray(state.comments)) setComments(state.comments);
-      // Auto-enter present mode if link includes ?present=1
-      if (new URLSearchParams(window.location.search).get('present') === '1') {
-        setPresentIndex(0);
-        setShowPresentControls(false);
-        setPresenting(true);
-      }
+      applyState(JSON.parse(json));
     } catch { /* ignore malformed hash */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1060,12 +1080,9 @@ export default function SlideGenPage() {
           )}
 
           <button
-            onClick={() => {
-              // Full state (with images) → browser history, so returning to the page restores images
-              const fullState = { slides, colorMode, slideColorOverrides, comments };
-              const fullCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(fullState));
-              window.history.replaceState(null, '', `#s=${fullCompressed}`);
-              // Strip base64 images from the SHARED URL only — keeps clipboard URL short
+            onClick={async () => {
+              if (shareStatus !== 'idle') return;
+              setShareStatus('copied'); // optimistic — shows spinner feel
               const stripBase64 = (s: SlideData) => {
                 const rec = s as unknown as Record<string, unknown>;
                 if (typeof rec.imageUrl === 'string' && rec.imageUrl.startsWith('data:')) {
@@ -1075,11 +1092,21 @@ export default function SlideGenPage() {
               };
               const shareState = { slides: slides.map(stripBase64), colorMode, slideColorOverrides, comments };
               const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(shareState));
-              const url = `${window.location.origin}${window.location.pathname}?present=1#s=${compressed}`;
-              navigator.clipboard.writeText(url).then(() => {
-                setShareStatus('copied');
-                setTimeout(() => setShareStatus('idle'), 2500);
-              });
+              try {
+                const res = await fetch('/api/share', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ data: compressed }),
+                });
+                const { key } = await res.json();
+                const url = `${window.location.origin}${window.location.pathname}?present=1&s=${key}`;
+                await navigator.clipboard.writeText(url);
+              } catch {
+                // Fallback to long URL if KV unavailable
+                const url = `${window.location.origin}${window.location.pathname}?present=1#s=${compressed}`;
+                await navigator.clipboard.writeText(url).catch(() => {});
+              }
+              setTimeout(() => setShareStatus('idle'), 2500);
             }}
             style={{
               background: shareStatus === 'copied' ? '#002910' : 'transparent',
