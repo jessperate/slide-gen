@@ -29,8 +29,8 @@ export default function WebGenPage() {
 
   const handlePdfFile = (file: File | null) => {
     if (!file || file.type !== 'application/pdf') return;
-    if (file.size > 15 * 1024 * 1024) {
-      setError('PDF must be under 15 MB.');
+    if (file.size > 3 * 1024 * 1024) {
+      setError('PDF must be under 3 MB for processing. Try reducing the number of pages or compressing images.');
       return;
     }
     const reader = new FileReader();
@@ -47,12 +47,19 @@ export default function WebGenPage() {
       setLoading(true);
       setError('');
       try {
+        const body = JSON.stringify({ pdfData, audience, tone });
+        // Vercel has a ~4.5MB body limit — warn if PDF is too large
+        if (body.length > 4 * 1024 * 1024) {
+          throw new Error('PDF is too large. Please use a file under ~3 MB, or reduce the number of pages.');
+        }
         const res = await fetch('/api/webgen/reformat-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pdfData, audience, tone }),
+          body,
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error('Server error: ' + text.slice(0, 100)); }
         if (!res.ok || !data.sections) throw new Error(data.error || 'Failed to redesign');
         setSections(data.sections);
       } catch (err) {
@@ -350,7 +357,7 @@ export default function WebGenPage() {
                   Drop your PDF here or click to browse
                 </span>
                 <span style={{ fontFamily: '"Saans", sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-                  Max 15 MB
+                  Max 3 MB
                 </span>
               </div>
             )}

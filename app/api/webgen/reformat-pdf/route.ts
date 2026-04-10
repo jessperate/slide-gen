@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 120;
+
 const client = new Anthropic();
 
 const SYSTEM_PROMPT = `You are an expert web designer. The user has uploaded an existing PDF presentation that they want redesigned as a modern HTML presentation using the AirOps web design system.
