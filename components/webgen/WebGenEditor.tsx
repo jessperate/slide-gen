@@ -63,6 +63,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
   const [imageOverlays, setImageOverlays] = useState<Record<string, ImageOverlay[]>>({});
   const [draggingImage, setDraggingImage] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const savedRangeRef = useRef<Range | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const presentRef = useRef<HTMLDivElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -225,11 +226,23 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
     presentRef.current?.requestFullscreen?.().catch(() => {});
   };
 
-  // ── Insert icon into focused contentEditable ──────────────────────────
-  const insertIcon = (iconClass: string) => {
+  // ── Save selection before opening icon picker ──────────────────────────
+  const openIconPicker = () => {
     const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+    setIconPickerOpen(true);
+  };
+
+  // ── Insert icon at saved cursor position ──────────────────────────────
+  const insertIcon = (iconClass: string) => {
+    const range = savedRangeRef.current;
+    if (!range) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
     const icon = document.createElement('i');
     icon.className = iconClass;
     icon.style.fontSize = '1.2em';
@@ -237,6 +250,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
     icon.style.marginRight = '4px';
     range.insertNode(icon);
     range.collapse(false);
+    savedRangeRef.current = null;
     setIconPickerOpen(false);
   };
 
@@ -398,7 +412,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
 
           {/* Icon picker */}
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setIconPickerOpen(!iconPickerOpen)} title="Insert icon" style={{ background: iconPickerOpen ? 'rgba(0,255,100,0.1)' : 'transparent', border: '1px solid #2a2a2a', color: iconPickerOpen ? '#00ff64' : 'rgba(255,255,255,0.5)', fontSize: 14, padding: '4px 7px', cursor: 'pointer', lineHeight: 1 }}>
+            <button onMouseDown={(e) => { e.preventDefault(); iconPickerOpen ? setIconPickerOpen(false) : openIconPicker(); }} title="Insert icon" style={{ background: iconPickerOpen ? 'rgba(0,255,100,0.1)' : 'transparent', border: '1px solid #2a2a2a', color: iconPickerOpen ? '#00ff64' : 'rgba(255,255,255,0.5)', fontSize: 14, padding: '4px 7px', cursor: 'pointer', lineHeight: 1 }}>
               <i className="ri-sparkling-line" />
             </button>
             {iconPickerOpen && (
@@ -409,7 +423,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
                     Click to insert at cursor
                   </div>
                   {ICON_SET.map((ic) => (
-                    <button key={ic} onClick={() => insertIcon(ic)} title={ic.replace('ri-', '').replace('-line', '')} style={{ width: 28, height: 28, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2 }}
+                    <button key={ic} onMouseDown={(e) => { e.preventDefault(); insertIcon(ic); }} title={ic.replace('ri-', '').replace('-line', '')} style={{ width: 28, height: 28, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2 }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,100,0.1)'; e.currentTarget.style.color = '#00ff64'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                     >

@@ -38,7 +38,9 @@ export interface TestimonialSection {
   personName: string;       // First + Last, rendered serif+sans split
   title: string;
   companyLogo?: string;     // domain for brandfetch or data URL
+  logoUrl?: string;         // uploaded logo data URL
   photoUrl?: string;
+  stippleUrl?: string;      // stippled version of photo
   stat?: { value: string; label: string };
 }
 
