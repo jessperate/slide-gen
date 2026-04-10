@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "AirOps PageGen",
-  description: "AI-powered landing page builder for AirOps",
+  description: "AI-powered HTML presentation builder for AirOps",
 };
 
 export default function WebGenLayout({

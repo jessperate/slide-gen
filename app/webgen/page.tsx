@@ -108,7 +108,7 @@ export default function WebGenPage() {
             marginBottom: 8,
           }}
         >
-          What&apos;s your page about?
+          What&apos;s your presentation about?
         </div>
         <div
           style={{
@@ -119,7 +119,7 @@ export default function WebGenPage() {
             lineHeight: 1.5,
           }}
         >
-          Describe your topic and we&apos;ll build a multipage HTML deck with branded sections you can edit inline.
+          Describe your topic and we&apos;ll build an HTML presentation with branded sections you can edit inline.
         </div>
 
         {/* Topic textarea */}
@@ -128,7 +128,7 @@ export default function WebGenPage() {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="e.g. How AirOps helps B2B SaaS companies scale content without headcount"
+          placeholder="e.g. Q3 product launch for enterprise marketing teams"
           rows={3}
           style={{
             width: '100%',
@@ -209,7 +209,7 @@ export default function WebGenPage() {
                 marginTop: 8,
                 lineHeight: 1.5,
               }}>
-                This will be used as background context when generating your page sections.
+                This will be used as background context when generating your presentation.
               </div>
             </div>
           )}
@@ -311,11 +311,11 @@ export default function WebGenPage() {
             {loading ? (
               <>
                 <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>&#9676;</span>
-                Building your page...
+                Building your deck...
               </>
             ) : (
               <>
-                Generate page <span style={{ opacity: 0.6, fontSize: 11 }}>&#8984;&#8629;</span>
+                Generate deck <span style={{ opacity: 0.6, fontSize: 11 }}>&#8984;&#8629;</span>
               </>
             )}
           </button>
