@@ -5,7 +5,7 @@ import { WebSection } from '@/lib/webgen';
 import WebGenEditor from '@/components/webgen/WebGenEditor';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
-const TONES = ['Persuasive', 'Educational', 'Storytelling', 'Formal', 'Bold'];
+const TONES = ['Persuasive', 'Educational', 'Storytelling', 'Formal', 'Bold', 'Funny'];
 
 export default function WebGenPage() {
   const [sections, setSections] = useState<WebSection[] | null>(null);
