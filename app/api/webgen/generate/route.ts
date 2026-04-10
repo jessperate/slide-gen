@@ -50,6 +50,10 @@ SECTION TYPES — return valid JSON matching these interfaces exactly:
 { type: "social-proof", headlineSerif?: string, headlineSans?: string, quotes: [{ quote: string, attribution: string, company?: string, color: "yellow"|"pink"|"green"|"blue"|"purple"|"teal" }] }
 - 3-6 quotes, each a different color
 
+9. CONTENT + IMAGE — left-aligned text with large image on right
+{ type: "content-image", eyebrow?: string, headline: string, body: string, ctaLabel?: string }
+- Great for product screenshots, team photos, or visual proof points
+
 PAGE STRUCTURE — follow this narrative arc:
 1. Hero — arresting headline that frames the value proposition
 2. Social proof OR stats — immediate credibility

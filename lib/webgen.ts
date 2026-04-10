@@ -106,6 +106,16 @@ export interface SocialProofSection {
   quotes: SocialProofQuote[];
 }
 
+export interface ContentImageSection {
+  id: string;
+  type: 'content-image';
+  eyebrow?: string;
+  headline: string;
+  body: string;
+  ctaLabel?: string;
+  imageUrl?: string;
+}
+
 export type WebSection =
   | HeroSection
   | StatsSection
@@ -114,7 +124,8 @@ export type WebSection =
   | ManifestoSection
   | FAQSection
   | CTASection
-  | SocialProofSection;
+  | SocialProofSection
+  | ContentImageSection;
 
 // ── Defaults for adding new sections ─────────────────────────────────────────
 
@@ -185,6 +196,14 @@ export const defaultSectionByType: Record<WebSection['type'], WebSection> = {
     body: 'Join the teams already using AirOps to create better content, faster.',
     ctaLabel: 'Book a demo',
     variant: 'indigo',
+  },
+  'content-image': {
+    id: '',
+    type: 'content-image',
+    eyebrow: 'KEY INSIGHT',
+    headline: 'A bold headline that introduces the visual.',
+    body: 'Supporting paragraph that adds context and depth to the image on the right. Keep it clear and benefit-focused.',
+    ctaLabel: 'Learn more',
   },
   'social-proof': {
     id: '',

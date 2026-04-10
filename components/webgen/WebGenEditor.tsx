@@ -10,6 +10,7 @@ import ManifestoSection from './sections/ManifestoSection';
 import FAQSection from './sections/FAQSection';
 import CTASection from './sections/CTASection';
 import SocialProofSection from './sections/SocialProofSection';
+import ContentImageSection from './sections/ContentImageSection';
 import AirOpsLogo from '@/components/AirOpsLogo';
 
 // ── Popular Remix Icons for the picker ─────────────────────────────────────
@@ -46,10 +47,11 @@ const SECTION_LABELS: Record<WebSection['type'], string> = {
   hero: 'Hero', stats: 'Stats', testimonial: 'Testimonial',
   features: 'Features', manifesto: 'Manifesto', faq: 'FAQ',
   cta: 'Call to Action', 'social-proof': 'Social Proof',
+  'content-image': 'Content + Image',
 };
 
 const ADD_SECTION_TYPES: WebSection['type'][] = [
-  'hero', 'stats', 'testimonial', 'features', 'manifesto', 'faq', 'cta', 'social-proof',
+  'hero', 'stats', 'testimonial', 'features', 'content-image', 'manifesto', 'faq', 'cta', 'social-proof',
 ];
 
 export default function WebGenEditor({ sections, onChange, onBack }: Props) {
@@ -266,6 +268,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
       case 'faq': return <FAQSection data={section} onChange={(u) => handler(u)} />;
       case 'cta': return <CTASection data={section} onChange={(u) => handler(u)} />;
       case 'social-proof': return <SocialProofSection data={section} onChange={(u) => handler(u)} />;
+      case 'content-image': return <ContentImageSection data={section} onChange={(u) => handler(u)} />;
       default: return null;
     }
   };
