@@ -23,137 +23,118 @@ export default function SocialProofSection({ data, onChange }: Props) {
     update({ quotes });
   };
 
+  const cols = Math.min(data.quotes.length, 3);
+
   return (
-    <section
+    <div
       style={{
+        width: 1280,
+        height: 720,
         background: '#ffffff',
-        padding: '120px 48px',
+        padding: '56px 64px',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        {/* Header */}
-        {(data.headlineSerif || data.headlineSans) && (
-          <div style={{ marginBottom: 64, textAlign: 'center' }}>
-            {data.headlineSerif && (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={(e) => update({ headlineSerif: e.currentTarget.textContent || '' })}
-                style={{
-                  fontFamily: '"Serrif VF", Georgia, serif',
-                  fontSize: 56,
-                  fontWeight: 400,
-                  lineHeight: 1.1,
-                  letterSpacing: '-1.12px',
-                  color: '#002910',
-                }}
-              >
-                {data.headlineSerif}
-              </div>
-            )}
-            {data.headlineSans && (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={(e) => update({ headlineSans: e.currentTarget.textContent || '' })}
-                style={{
-                  fontFamily: '"Saans", "Inter", sans-serif',
-                  fontSize: 56,
-                  fontWeight: 400,
-                  lineHeight: 1.0,
-                  letterSpacing: '-1.12px',
-                  color: '#002910',
-                }}
-              >
-                {data.headlineSans}
-              </div>
-            )}
-          </div>
-        )}
+      {/* Header */}
+      {(data.headlineSerif || data.headlineSans) && (
+        <div style={{ marginBottom: 40, textAlign: 'center' }}>
+          {data.headlineSerif && (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => update({ headlineSerif: e.currentTarget.textContent || '' })}
+              style={{
+                fontFamily: '"Serrif VF", Georgia, serif',
+                fontSize: 48, fontWeight: 400, lineHeight: 1.1,
+                letterSpacing: '-1.44px', color: '#002910',
+              }}
+            >
+              {data.headlineSerif}
+            </div>
+          )}
+          {data.headlineSans && (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => update({ headlineSans: e.currentTarget.textContent || '' })}
+              style={{
+                fontFamily: '"Saans", "Inter", sans-serif',
+                fontSize: 48, fontWeight: 400, lineHeight: 1.0,
+                letterSpacing: '-1.44px', color: '#002910',
+              }}
+            >
+              {data.headlineSans}
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* Quote cards grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: 16,
-        }}>
-          {data.quotes.map((q, i) => {
-            const colors = QUOTE_COLORS[q.color] || QUOTE_COLORS.green;
-            return (
+      {/* Quote cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: 16,
+        flex: 1,
+      }}>
+        {data.quotes.map((q, i) => {
+          const colors = QUOTE_COLORS[q.color] || QUOTE_COLORS.green;
+          return (
+            <div
+              key={i}
+              style={{
+                background: colors.bg,
+                padding: 28,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
               <div
-                key={i}
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={(e) => updateQuote(i, { quote: e.currentTarget.textContent || '' })}
                 style={{
-                  background: colors.bg,
-                  padding: 32,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  minHeight: 240,
+                  fontFamily: '"Saans", sans-serif',
+                  fontSize: 16, fontStyle: 'italic',
+                  lineHeight: 1.5, color: colors.text,
+                  marginBottom: 20,
                 }}
               >
-                {/* Quote */}
+                &ldquo;{q.quote}&rdquo;
+              </div>
+              <div>
                 <div
                   contentEditable
                   suppressContentEditableWarning
-                  onBlur={(e) => updateQuote(i, { quote: e.currentTarget.textContent || '' })}
+                  onBlur={(e) => updateQuote(i, { attribution: e.currentTarget.textContent || '' })}
                   style={{
-                    fontFamily: '"Saans", "Inter", sans-serif',
-                    fontSize: 18,
-                    fontStyle: 'italic',
-                    lineHeight: 1.5,
-                    color: colors.text,
-                    marginBottom: 24,
+                    fontFamily: '"Saans", sans-serif',
+                    fontSize: 13, fontWeight: 600, color: colors.text,
                   }}
                 >
-                  &ldquo;{q.quote}&rdquo;
+                  {q.attribution}
                 </div>
-
-                {/* Attribution */}
-                <div>
-                  {q.company && (
-                    <img
-                      src={`https://logo.clearbit.com/${q.company.toLowerCase().replace(/\s+/g, '')}.com`}
-                      alt={q.company}
-                      style={{ height: 20, marginBottom: 8, opacity: 0.6 }}
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={(e) => updateQuote(i, { attribution: e.currentTarget.textContent || '' })}
-                      style={{
-                        fontFamily: '"Saans", "Inter", sans-serif',
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: colors.text,
-                      }}
-                    >
-                      {q.attribution}
-                    </div>
-                    {q.company && (
-                      <div
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={(e) => updateQuote(i, { company: e.currentTarget.textContent || '' })}
-                        style={{
-                          fontFamily: '"Saans", "Inter", sans-serif',
-                          fontSize: 14,
-                          color: colors.text,
-                          opacity: 0.7,
-                        }}
-                      >
-                        {q.company}
-                      </div>
-                    )}
+                {q.company && (
+                  <div
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => updateQuote(i, { company: e.currentTarget.textContent || '' })}
+                    style={{
+                      fontFamily: '"Saans", sans-serif',
+                      fontSize: 12, color: colors.text, opacity: 0.6, marginTop: 2,
+                    }}
+                  >
+                    {q.company}
                   </div>
-                </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
-    </section>
+    </div>
   );
 }

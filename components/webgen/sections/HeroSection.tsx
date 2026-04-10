@@ -11,17 +11,21 @@ export default function HeroSection({ data, onChange }: Props) {
   const update = (fields: Partial<HeroData>) => onChange({ ...data, ...fields });
 
   return (
-    <section
+    <div
       style={{
+        width: 1280,
+        height: 720,
         background: '#ffffff',
         backgroundImage: 'radial-gradient(#d4e8da 1px, transparent 1px)',
         backgroundSize: '24px 24px',
-        padding: '168px 48px 96px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         textAlign: 'center',
+        padding: '0 80px',
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* Eyebrow */}
@@ -41,7 +45,7 @@ export default function HeroSection({ data, onChange }: Props) {
             border: '1px solid #057a28',
             borderRadius: 5,
             background: '#eef9f3',
-            marginBottom: 40,
+            marginBottom: 32,
             display: 'inline-flex',
             width: 'fit-content',
             lineHeight: 1.3,
@@ -51,8 +55,8 @@ export default function HeroSection({ data, onChange }: Props) {
         </div>
       )}
 
-      {/* H2 Composition: serif line + sans line */}
-      <div style={{ maxWidth: 900, marginBottom: 32 }}>
+      {/* H2 Composition */}
+      <div style={{ marginBottom: 24 }}>
         <div
           contentEditable
           suppressContentEditableWarning
@@ -92,18 +96,17 @@ export default function HeroSection({ data, onChange }: Props) {
         onBlur={(e) => update({ body: e.currentTarget.textContent || '' })}
         style={{
           fontFamily: '"Saans", "Inter", sans-serif',
-          fontSize: 18,
+          fontSize: 20,
           lineHeight: 1.5,
-          letterSpacing: '0.18px',
           color: '#01200d',
           maxWidth: 640,
-          marginBottom: 40,
+          marginBottom: 32,
         }}
       >
         {data.body}
       </div>
 
-      {/* CTA Button */}
+      {/* CTA */}
       <div
         contentEditable
         suppressContentEditableWarning
@@ -123,17 +126,6 @@ export default function HeroSection({ data, onChange }: Props) {
       >
         {data.ctaLabel}
       </div>
-
-      {/* Optional image */}
-      {data.imageUrl && (
-        <div style={{ marginTop: 64, maxWidth: 1000, width: '100%' }}>
-          <img
-            src={data.imageUrl}
-            alt=""
-            style={{ width: '100%', border: '1px solid #d4e8da', display: 'block' }}
-          />
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

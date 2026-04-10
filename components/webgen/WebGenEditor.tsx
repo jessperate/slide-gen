@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { WebSection, defaultSectionByType } from '@/lib/webgen';
 import HeroSection from './sections/HeroSection';
 import StatsSection from './sections/StatsSection';
@@ -34,294 +34,339 @@ const ADD_SECTION_TYPES: WebSection['type'][] = [
 ];
 
 export default function WebGenEditor({ sections, onChange, onBack }: Props) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [scale, setScale] = useState(1);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
+  // ── Scale to fit viewport ──────────────────────────────────────────────
+  useEffect(() => {
+    const container = canvasRef.current;
+    if (!container) return;
+    const updateScale = () => {
+      const { width, height } = container.getBoundingClientRect();
+      const pad = 48;
+      const scaleX = (width - pad * 2) / 1280;
+      const scaleY = (height - pad * 2) / 720;
+      setScale(Math.min(scaleX, scaleY, 1));
+    };
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
+  // ── Keyboard navigation ────────────────────────────────────────────────
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    // Don't navigate when editing text
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(sections.length - 1, i + 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(0, i - 1));
+    }
+  }, [sections.length]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [handleKey]);
+
+  // ── Section operations ─────────────────────────────────────────────────
   const updateSection = (idx: number, updated: WebSection) => {
     onChange(sections.map((s, i) => (i === idx ? updated : s)));
   };
 
-  const moveSection = (idx: number, dir: -1 | 1) => {
-    const target = idx + dir;
-    if (target < 0 || target >= sections.length) return;
-    const next = [...sections];
-    [next[idx], next[target]] = [next[target], next[idx]];
-    onChange(next);
-  };
-
   const deleteSection = (idx: number) => {
-    onChange(sections.filter((_, i) => i !== idx));
+    if (sections.length <= 1) return;
+    const next = sections.filter((_, i) => i !== idx);
+    onChange(next);
+    setActiveIndex(Math.min(activeIndex, next.length - 1));
   };
 
   const addSection = (type: WebSection['type']) => {
     const template = { ...defaultSectionByType[type], id: `wg-${Date.now()}` };
-    onChange([...sections, template]);
+    const next = [...sections];
+    next.splice(activeIndex + 1, 0, template);
+    onChange(next);
+    setActiveIndex(activeIndex + 1);
     setAddMenuOpen(false);
-    // Scroll to bottom after add
-    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
   };
 
-  const renderSection = (section: WebSection, idx: number) => {
-    const props = {
-      onChange: (updated: WebSection) => updateSection(idx, updated),
-    };
+  const moveSection = (dir: -1 | 1) => {
+    const target = activeIndex + dir;
+    if (target < 0 || target >= sections.length) return;
+    const next = [...sections];
+    [next[activeIndex], next[target]] = [next[target], next[activeIndex]];
+    onChange(next);
+    setActiveIndex(target);
+  };
 
+  // ── Render active section ──────────────────────────────────────────────
+  const activeSection = sections[activeIndex];
+
+  const renderSection = (section: WebSection) => {
+    const handler = (updated: WebSection) => updateSection(activeIndex, updated);
     switch (section.type) {
-      case 'hero':
-        return <HeroSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'stats':
-        return <StatsSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'testimonial':
-        return <TestimonialSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'features':
-        return <FeaturesSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'manifesto':
-        return <ManifestoSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'faq':
-        return <FAQSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'cta':
-        return <CTASection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      case 'social-proof':
-        return <SocialProofSection data={section} {...props} onChange={(u) => updateSection(idx, u)} />;
-      default:
-        return null;
+      case 'hero': return <HeroSection data={section} onChange={(u) => handler(u)} />;
+      case 'stats': return <StatsSection data={section} onChange={(u) => handler(u)} />;
+      case 'testimonial': return <TestimonialSection data={section} onChange={(u) => handler(u)} />;
+      case 'features': return <FeaturesSection data={section} onChange={(u) => handler(u)} />;
+      case 'manifesto': return <ManifestoSection data={section} onChange={(u) => handler(u)} />;
+      case 'faq': return <FAQSection data={section} onChange={(u) => handler(u)} />;
+      case 'cta': return <CTASection data={section} onChange={(u) => handler(u)} />;
+      case 'social-proof': return <SocialProofSection data={section} onChange={(u) => handler(u)} />;
+      default: return null;
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fffa' }}>
-      {/* Top bar */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          background: 'rgba(0, 41, 16, 0.95)',
-          backdropFilter: 'blur(12px)',
-          height: 56,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          borderBottom: '1px solid rgba(0, 255, 100, 0.1)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: '#111111',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: '"Saans", sans-serif',
+    }}>
+      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      <div style={{
+        height: 48,
+        background: '#111111',
+        borderBottom: '1px solid #2a2a2a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        flexShrink: 0,
+        zIndex: 100,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button
             onClick={onBack}
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255,255,255,0.5)',
-              fontFamily: '"Saans", sans-serif',
-              fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 0',
+              background: 'transparent', border: 'none',
+              color: 'rgba(255,255,255,0.4)', fontSize: 13,
+              fontFamily: '"Saans", sans-serif', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
             <i className="ri-arrow-left-line" /> Back
           </button>
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)' }} />
-          <AirOpsLogo color="#ffffff" width={80} />
+          <div style={{ width: 1, height: 16, background: '#2a2a2a' }} />
+          <AirOpsLogo color="#ffffff" width={72} />
           <span style={{
-            fontFamily: '"Saans Mono", monospace',
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.3)',
-            letterSpacing: '0.08em',
+            fontFamily: '"Saans Mono", monospace', fontSize: 10,
+            color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
           }}>
-            PageGen
+            DeckGen
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Add section button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Reorder buttons */}
+          <button
+            onClick={() => moveSection(-1)}
+            disabled={activeIndex === 0}
+            style={{
+              background: 'transparent', border: '1px solid #2a2a2a',
+              color: activeIndex === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+              fontSize: 14, cursor: activeIndex === 0 ? 'default' : 'pointer',
+              padding: '4px 8px', lineHeight: 1,
+            }}
+            title="Move slide left"
+          >
+            <i className="ri-arrow-up-s-line" />
+          </button>
+          <button
+            onClick={() => moveSection(1)}
+            disabled={activeIndex === sections.length - 1}
+            style={{
+              background: 'transparent', border: '1px solid #2a2a2a',
+              color: activeIndex === sections.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+              fontSize: 14, cursor: activeIndex === sections.length - 1 ? 'default' : 'pointer',
+              padding: '4px 8px', lineHeight: 1,
+            }}
+            title="Move slide right"
+          >
+            <i className="ri-arrow-down-s-line" />
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={() => deleteSection(activeIndex)}
+            disabled={sections.length <= 1}
+            style={{
+              background: 'transparent', border: '1px solid #2a2a2a',
+              color: sections.length <= 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,80,80,0.6)',
+              fontSize: 14, cursor: sections.length <= 1 ? 'default' : 'pointer',
+              padding: '4px 8px', lineHeight: 1,
+            }}
+            title="Delete slide"
+          >
+            <i className="ri-delete-bin-line" />
+          </button>
+
+          <div style={{ width: 1, height: 16, background: '#2a2a2a' }} />
+
+          {/* Add section */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setAddMenuOpen(!addMenuOpen)}
               style={{
-                background: 'rgba(0,255,100,0.1)',
-                border: '1px solid rgba(0,255,100,0.2)',
-                color: '#00ff64',
-                fontFamily: '"Saans", sans-serif',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-                padding: '6px 16px',
-                borderRadius: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
+                background: 'rgba(0,255,100,0.08)', border: '1px solid rgba(0,255,100,0.2)',
+                color: '#00ff64', fontFamily: '"Saans", sans-serif',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                padding: '5px 14px', borderRadius: 0,
+                display: 'flex', alignItems: 'center', gap: 4,
               }}
             >
-              <i className="ri-add-line" /> Add section
+              <i className="ri-add-line" /> Add slide
             </button>
-
             {addMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: 4,
-                  background: '#001a0b',
-                  border: '1px solid rgba(0,255,100,0.15)',
-                  minWidth: 200,
-                  zIndex: 200,
-                }}
-              >
-                {ADD_SECTION_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => addSection(type)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: '1px solid rgba(0,255,100,0.06)',
-                      color: 'rgba(255,255,255,0.7)',
-                      fontFamily: '"Saans", sans-serif',
-                      fontSize: 13,
-                      padding: '10px 16px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(0,255,100,0.08)';
-                      e.currentTarget.style.color = '#00ff64';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                    }}
-                  >
-                    {SECTION_LABELS[type]}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setAddMenuOpen(false)} />
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: 4,
+                  background: '#1a1a1a', border: '1px solid #2a2a2a',
+                  minWidth: 180, zIndex: 200,
+                }}>
+                  {ADD_SECTION_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => addSection(type)}
+                      style={{
+                        display: 'block', width: '100%', background: 'transparent',
+                        border: 'none', borderBottom: '1px solid #2a2a2a',
+                        color: 'rgba(255,255,255,0.6)', fontFamily: '"Saans", sans-serif',
+                        fontSize: 12, padding: '8px 14px', cursor: 'pointer', textAlign: 'left',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,100,0.06)'; e.currentTarget.style.color = '#00ff64'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                    >
+                      {SECTION_LABELS[type]}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
-
-          <span style={{
-            fontFamily: '"Saans Mono", monospace',
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.25)',
-          }}>
-            {sections.length} sections
-          </span>
         </div>
       </div>
 
-      {/* Click-away for add menu */}
-      {addMenuOpen && (
+      {/* ── Main canvas area ────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+        {/* Prev arrow */}
+        <button
+          onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+          disabled={activeIndex === 0}
+          style={{
+            position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+            zIndex: 50, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+            color: activeIndex === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.7)',
+            fontFamily: '"Saans", sans-serif', fontSize: 20,
+            cursor: activeIndex === 0 ? 'default' : 'pointer',
+            padding: '12px 14px', backdropFilter: 'blur(8px)', lineHeight: 1,
+          }}
+        >
+          &#8592;
+        </button>
+
+        {/* Next arrow */}
+        <button
+          onClick={() => setActiveIndex((i) => Math.min(sections.length - 1, i + 1))}
+          disabled={activeIndex === sections.length - 1}
+          style={{
+            position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+            zIndex: 50, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+            color: activeIndex === sections.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.7)',
+            fontFamily: '"Saans", sans-serif', fontSize: 20,
+            cursor: activeIndex === sections.length - 1 ? 'default' : 'pointer',
+            padding: '12px 14px', backdropFilter: 'blur(8px)', lineHeight: 1,
+          }}
+        >
+          &#8594;
+        </button>
+
+        {/* Canvas container */}
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 99 }}
-          onClick={() => setAddMenuOpen(false)}
-        />
-      )}
-
-      {/* Sections */}
-      <div style={{ paddingTop: 56 }}>
-        {sections.map((section, idx) => (
-          <div
-            key={section.id}
-            style={{ position: 'relative' }}
-            onMouseEnter={() => setHoveredIdx(idx)}
-            onMouseLeave={() => setHoveredIdx(null)}
-          >
-            {/* Section controls */}
-            {hoveredIdx === idx && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  zIndex: 50,
-                  display: 'flex',
-                  gap: 4,
-                  background: 'rgba(0, 41, 16, 0.9)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '4px 6px',
-                  border: '1px solid rgba(0,255,100,0.15)',
-                }}
-              >
-                <span style={{
-                  fontFamily: '"Saans Mono", monospace',
-                  fontSize: 10,
-                  color: 'rgba(255,255,255,0.4)',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase' as const,
-                  padding: '4px 8px',
-                  alignSelf: 'center',
-                }}>
-                  {SECTION_LABELS[section.type]}
-                </span>
-                <button
-                  onClick={() => moveSection(idx, -1)}
-                  disabled={idx === 0}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: idx === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
-                    cursor: idx === 0 ? 'default' : 'pointer',
-                    fontSize: 16,
-                    padding: '4px 6px',
-                  }}
-                  title="Move up"
-                >
-                  <i className="ri-arrow-up-s-line" />
-                </button>
-                <button
-                  onClick={() => moveSection(idx, 1)}
-                  disabled={idx === sections.length - 1}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: idx === sections.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
-                    cursor: idx === sections.length - 1 ? 'default' : 'pointer',
-                    fontSize: 16,
-                    padding: '4px 6px',
-                  }}
-                  title="Move down"
-                >
-                  <i className="ri-arrow-down-s-line" />
-                </button>
-                <button
-                  onClick={() => deleteSection(idx)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'rgba(255,100,100,0.7)',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    padding: '4px 6px',
-                  }}
-                  title="Delete section"
-                >
-                  <i className="ri-delete-bin-line" />
-                </button>
-              </div>
-            )}
-
-            {renderSection(section, idx)}
+          ref={canvasRef}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* 16:9 slide frame */}
+          <div style={{
+            width: 1280,
+            height: 720,
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+          }}>
+            {activeSection && renderSection(activeSection)}
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Footer */}
+      {/* ── Bottom nav bar ──────────────────────────────────────────────── */}
       <div style={{
-        background: '#002910',
-        padding: '48px',
+        height: 56,
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(12px)',
+        borderTop: '1px solid #2a2a2a',
         display: 'flex',
-        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '0 24px',
+        gap: 20,
+        flexShrink: 0,
+        zIndex: 100,
       }}>
-        <AirOpsLogo color="rgba(255,255,255,0.3)" width={120} />
+        {/* Counter */}
+        <div style={{
+          fontFamily: '"Saans Mono", monospace', fontSize: 12,
+          fontWeight: 500, letterSpacing: '0.1em',
+          color: 'rgba(255,255,255,0.4)', flexShrink: 0,
+          minWidth: 50,
+        }}>
+          {String(activeIndex + 1).padStart(2, '0')} / {String(sections.length).padStart(2, '0')}
+        </div>
+
+        {/* Dot progress bar */}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1 }}>
+          {sections.map((s, i) => (
+            <div
+              key={s.id}
+              onClick={() => setActiveIndex(i)}
+              style={{
+                width: i === activeIndex ? 20 : 5,
+                height: 5,
+                background: i === activeIndex ? '#00ff64' : 'rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                transition: 'width 0.2s, background 0.2s',
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Slide type label */}
+        <div style={{
+          fontFamily: '"Saans Mono", monospace', fontSize: 10,
+          fontWeight: 500, letterSpacing: '0.08em',
+          textTransform: 'uppercase' as const,
+          color: 'rgba(255,255,255,0.3)',
+        }}>
+          {activeSection ? SECTION_LABELS[activeSection.type] : ''}
+        </div>
       </div>
     </div>
   );
