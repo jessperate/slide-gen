@@ -71,23 +71,27 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
   const imgInputRef = useRef<HTMLInputElement>(null);
 
   // ── Scale to fit viewport ──────────────────────────────────────────────
+  const recalcScale = useCallback(() => {
+    const container = canvasRef.current;
+    if (!container) return;
+    const { width, height } = container.getBoundingClientRect();
+    if (width === 0 || height === 0) return; // not mounted yet
+    const pad = 48;
+    const scaleX = (width - pad * 2) / 1280;
+    const scaleY = (height - pad * 2) / 720;
+    setScale(Math.max(0.1, Math.min(scaleX, scaleY, 1)));
+  }, []);
+
   useEffect(() => {
     const container = canvasRef.current;
     if (!container) return;
-    const updateScale = () => {
-      const { width, height } = container.getBoundingClientRect();
-      const pad = 48;
-      const scaleX = (width - pad * 2) / 1280;
-      const scaleY = (height - pad * 2) / 720;
-      setScale(Math.min(scaleX, scaleY, 1));
-    };
-    updateScale();
-    const ro = new ResizeObserver(updateScale);
+    recalcScale();
+    const ro = new ResizeObserver(recalcScale);
     ro.observe(container);
     return () => ro.disconnect();
-  }, []);
+  }, [recalcScale]);
 
-  // ── Present scale ──────────────────────────────────────────────────────
+  // ── Present scale + fullscreen exit listener ────────────────────────────
   useEffect(() => {
     if (!presenting) return;
     const update = () => {
@@ -95,8 +99,19 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
     };
     update();
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, [presenting]);
+    const onFsChange = () => {
+      if (!document.fullscreenElement) {
+        setPresenting(false);
+        setTimeout(recalcScale, 100);
+        setTimeout(recalcScale, 300);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => {
+      window.removeEventListener('resize', update);
+      document.removeEventListener('fullscreenchange', onFsChange);
+    };
+  }, [presenting, recalcScale]);
 
   // ── Keyboard navigation ────────────────────────────────────────────────
   const handleKey = useCallback((e: KeyboardEvent) => {
@@ -104,8 +119,7 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
 
     if (e.key === 'Escape' && presenting) {
-      setPresenting(false);
-      document.exitFullscreen?.().catch(() => {});
+      exitPresentation();
       return;
     }
 
@@ -228,6 +242,14 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
     presentRef.current?.requestFullscreen?.().catch(() => {});
   };
 
+  const exitPresentation = () => {
+    setPresenting(false);
+    document.exitFullscreen?.().catch(() => {});
+    // Force scale recalc after fullscreen exit reflows
+    setTimeout(recalcScale, 100);
+    setTimeout(recalcScale, 300);
+  };
+
   // ── Save selection before opening icon picker ──────────────────────────
   const openIconPicker = () => {
     const sel = window.getSelection();
@@ -346,36 +368,14 @@ export default function WebGenEditor({ sections, onChange, onBack }: Props) {
           {renderLogo()}
         </div>
 
-        {/* Bottom bar */}
-        <div
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 20, padding: '10px 24px' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ fontFamily: '"Saans Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
-            {activeIndex + 1} / {sections.length}
-          </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1 }}>
-            {sections.map((_, i) => (
-              <div key={i} onClick={() => setActiveIndex(i)} style={{ width: i === activeIndex ? 16 : 4, height: 4, background: i === activeIndex ? '#00ff64' : 'rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'width 0.2s, background 0.2s' }} />
-            ))}
-          </div>
-          <button
-            onClick={() => { setPresenting(false); document.exitFullscreen?.().catch(() => {}); }}
-            style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', fontFamily: '"Saans", sans-serif', fontSize: 12, padding: '5px 14px', cursor: 'pointer' }}
-          >
-            Exit
-          </button>
+        {/* Escape hint — fades out */}
+        <div style={{
+          position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          fontFamily: '"Saans Mono", monospace', fontSize: 10, letterSpacing: '0.08em',
+          color: 'rgba(255,255,255,0.2)', pointerEvents: 'none',
+        }}>
+          ESC to exit &middot; Arrow keys to navigate
         </div>
-
-        {/* Prev/Next */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => Math.max(0, i - 1)); }}
-          style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: activeIndex === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.7)', fontSize: 20, padding: '12px 14px', cursor: activeIndex === 0 ? 'default' : 'pointer', lineHeight: 1 }}
-        >&#8592;</button>
-        <button
-          onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => Math.min(sections.length - 1, i + 1)); }}
-          style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: activeIndex === sections.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.7)', fontSize: 20, padding: '12px 14px', cursor: activeIndex === sections.length - 1 ? 'default' : 'pointer', lineHeight: 1 }}
-        >&#8594;</button>
       </div>
     );
   }
