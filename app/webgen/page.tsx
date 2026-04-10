@@ -9,12 +9,13 @@ const TONES = ['Persuasive', 'Educational', 'Storytelling', 'Formal', 'Bold'];
 
 export default function WebGenPage() {
   const [sections, setSections] = useState<WebSection[] | null>(null);
-  const [mode, setMode] = useState<'generate' | 'pdf'>('generate');
+  const [mode, setMode] = useState<'generate' | 'paste' | 'pdf'>('generate');
   const [topic, setTopic] = useState('');
   const [audience, setAudience] = useState('');
   const [tone, setTone] = useState('Persuasive');
   const [contextOpen, setContextOpen] = useState(false);
   const [contextText, setContextText] = useState('');
+  const [pasteContent, setPasteContent] = useState('');
   const [pdfData, setPdfData] = useState<string | null>(null);
   const [pdfName, setPdfName] = useState('');
   const [pdfDragging, setPdfDragging] = useState(false);
@@ -69,6 +70,32 @@ export default function WebGenPage() {
       return;
     }
 
+    // Paste mode — send pasted content as context to generate
+    if (mode === 'paste') {
+      if (!pasteContent.trim()) return;
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch('/api/webgen/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: 'the provided content',
+            audience,
+            tone,
+            context: pasteContent.trim(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sections) throw new Error(data.error || 'Failed to generate');
+        setSections(data.sections);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Something went wrong.');
+        setLoading(false);
+      }
+      return;
+    }
+
     // Generate mode
     if (!topic.trim() && !contextText.trim()) return;
     setLoading(true);
@@ -99,6 +126,7 @@ export default function WebGenPage() {
 
   const canSubmit =
     mode === 'pdf' ? !!pdfData :
+    mode === 'paste' ? !!pasteContent.trim() :
     !!topic.trim() || !!contextText.trim();
 
   // ── Editor mode ──────────────────────────────────────────────────────────
@@ -147,7 +175,7 @@ export default function WebGenPage() {
       >
         {/* Mode tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          {(['generate', 'pdf'] as const).map((m) => (
+          {(['generate', 'paste', 'pdf'] as const).map((m) => (
             <button
               key={m}
               onClick={() => { setMode(m); setError(''); }}
@@ -166,7 +194,7 @@ export default function WebGenPage() {
                 transition: 'color 0.15s',
               }}
             >
-              {m === 'generate' ? 'Generate from scratch' : 'Redesign existing PDF'}
+              {m === 'generate' ? 'Generate from scratch' : m === 'paste' ? 'From content' : 'Redesign PDF'}
             </button>
           ))}
         </div>
@@ -183,7 +211,7 @@ export default function WebGenPage() {
             marginBottom: 8,
           }}
         >
-          {mode === 'generate' ? "What's your presentation about?" : 'Upload your existing deck'}
+          {mode === 'generate' ? "What's your presentation about?" : mode === 'paste' ? 'Paste your content' : 'Upload your existing deck'}
         </div>
         <div
           style={{
@@ -196,11 +224,40 @@ export default function WebGenPage() {
         >
           {mode === 'generate'
             ? "Describe your topic and we'll build an HTML presentation with branded sections you can edit inline."
+            : mode === 'paste'
+            ? "Paste HTML, markdown, notes, or any text and we'll turn it into a branded deck."
             : "We'll extract your content and redesign it as a branded HTML deck you can edit inline."}
         </div>
 
-        {/* ── Generate mode input ─────────────────────────────────────── */}
-        {mode === 'generate' ? (
+        {/* ── Paste mode input ──────────────────────────────────────── */}
+        {mode === 'paste' ? (
+          <textarea
+            value={pasteContent}
+            onChange={(e) => setPasteContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Paste HTML, markdown, meeting notes, blog post, landing page copy, Notion export, or any text content..."
+            rows={8}
+            autoFocus
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 0,
+              color: '#ffffff',
+              fontFamily: '"Saans Mono", monospace',
+              fontSize: 13,
+              lineHeight: 1.6,
+              padding: '14px 16px',
+              resize: 'vertical',
+              outline: 'none',
+              marginBottom: 16,
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(0,255,100,0.4)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
+          />
+        ) : mode === 'generate' ? (
           <>
             <textarea
               ref={textareaRef}
@@ -455,11 +512,11 @@ export default function WebGenPage() {
             {loading ? (
               <>
                 <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>&#9676;</span>
-                {mode === 'pdf' ? 'Redesigning your deck...' : 'Building your deck...'}
+                {mode === 'pdf' ? 'Redesigning your deck...' : mode === 'paste' ? 'Building from your content...' : 'Building your deck...'}
               </>
             ) : (
               <>
-                {mode === 'pdf' ? 'Redesign deck' : 'Generate deck'}
+                {mode === 'pdf' ? 'Redesign deck' : mode === 'paste' ? 'Build deck' : 'Generate deck'}
                 {mode === 'generate' && <span style={{ opacity: 0.6, fontSize: 11 }}>&#8984;&#8629;</span>}
               </>
             )}
